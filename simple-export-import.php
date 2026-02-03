@@ -29,6 +29,7 @@ function sei_get_default_settings() {
 		'export_capability'  => 'edit_posts',
 		'import_capability'  => 'edit_posts',
 		'import_status'      => 'draft',
+		'export_wpml_translations' => false,
 	);
 }
 
@@ -87,6 +88,43 @@ function sei_validate_json_file( $file ) {
 	return $errors;
 }
 
+/**
+ * Check if WPML is active
+ */
+function sei_is_wpml_active() {
+	return defined( 'ICL_SITEPRESS_VERSION' ) || class_exists( 'SitePress' );
+}
+
+/**
+ * Get all translations for a post
+ */
+function sei_get_post_translations( $post_id, $post_type ) {
+	if ( ! sei_is_wpml_active() ) {
+		return array();
+	}
+
+	$element_type = 'post_' . $post_type;
+	
+	// Get language details for the current post
+	$lang_details = apply_filters( 'wpml_element_language_details', null, array(
+		'element_id'   => $post_id,
+		'element_type' => $element_type
+	) );
+
+	if ( empty( $lang_details ) || empty( $lang_details->trid ) ) {
+		return array();
+	}
+
+	// Get all translations
+	$translations = apply_filters( 'wpml_get_element_translations', null, $lang_details->trid, $element_type );
+
+	if ( empty( $translations ) || ! is_array( $translations ) ) {
+		return array();
+	}
+
+	return $translations;
+}
+
 // ============================================================================
 // SETTINGS SECTION
 // ============================================================================
@@ -99,6 +137,7 @@ function sei_register_settings() {
 	register_setting( 'sei_settings_group', 'sei_export_capability' );
 	register_setting( 'sei_settings_group', 'sei_import_capability' );
 	register_setting( 'sei_settings_group', 'sei_import_status' );
+	register_setting( 'sei_settings_group', 'sei_export_wpml_translations' );
 }
 add_action( 'admin_init', 'sei_register_settings' );
 
@@ -125,6 +164,10 @@ function sei_settings_page() {
 	$export_capability = get_option( 'sei_export_capability', $defaults['export_capability'] );
 	$import_capability = get_option( 'sei_import_capability', $defaults['import_capability'] );
 	$import_status = get_option( 'sei_import_status', $defaults['import_status'] );
+	$export_wpml_translations = get_option( 'sei_export_wpml_translations', $defaults['export_wpml_translations'] );
+
+	// Check if WPML is active
+	$wpml_active = sei_is_wpml_active();
 
 	// Get all public post types
 	$post_types = get_post_types( array( 'public' => true ), 'objects' );
@@ -232,6 +275,35 @@ function sei_settings_page() {
 						</p>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">
+						<label for="sei_export_wpml_translations">
+							<?php echo esc_html__( 'WPML Translations', SEI_TEXT_DOMAIN ); ?>
+						</label>
+					</th>
+					<td>
+						<fieldset>
+							<label>
+								<input type="checkbox"
+									   name="sei_export_wpml_translations"
+									   id="sei_export_wpml_translations"
+									   value="1"
+									   <?php checked( $export_wpml_translations, 1 ); ?>
+									   <?php disabled( ! $wpml_active ); ?>>
+								<?php echo esc_html__( 'Export with WPML translations', SEI_TEXT_DOMAIN ); ?>
+							</label>
+							<p class="description">
+								<?php
+								if ( $wpml_active ) {
+									echo esc_html__( 'When enabled, exporting a post will include all its WPML translations in the same JSON file.', SEI_TEXT_DOMAIN );
+								} else {
+									echo esc_html__( 'WPML plugin is not active. Install and activate WPML to use this feature.', SEI_TEXT_DOMAIN );
+								}
+								?>
+							</p>
+						</fieldset>
+					</td>
+				</tr>
 			</table>
 
 			<?php submit_button(); ?>
@@ -245,30 +317,13 @@ function sei_settings_page() {
 // ============================================================================
 
 /**
- * Export post as JSON
+ * Collect all data for a single post
  */
-function sei_export_post_as_json() {
-	// Check if post ID is provided
-	if ( ! ( isset( $_GET['post'] ) || isset( $_POST['post'] ) || ( isset( $_REQUEST['action'] ) && 'sei_export_post' == $_REQUEST['action'] ) ) ) {
-		wp_die( esc_html__( 'No post to export has been supplied!', SEI_TEXT_DOMAIN ) );
-	}
-
-	// Verify nonce
-	if ( ! isset( $_GET['export_nonce'] ) || ! wp_verify_nonce( $_GET['export_nonce'], 'sei_export_' . absint( $_GET['post'] ) ) ) {
-		wp_die( esc_html__( 'Security check failed', SEI_TEXT_DOMAIN ) );
-	}
-
-	// Check capability
-	$export_capability = get_option( 'sei_export_capability', 'edit_posts' );
-	if ( ! current_user_can( $export_capability ) ) {
-		wp_die( esc_html__( 'You do not have permission to export posts', SEI_TEXT_DOMAIN ) );
-	}
-
-	$post_id = absint( $_GET['post'] );
+function sei_collect_post_data( $post_id ) {
 	$post = get_post( $post_id );
 
 	if ( ! $post ) {
-		wp_die( esc_html__( 'Post not found', SEI_TEXT_DOMAIN ) );
+		return null;
 	}
 
 	// Collect basic post data
@@ -333,6 +388,88 @@ function sei_export_post_as_json() {
 			'url'   => wp_get_attachment_url( $attachment->ID ),
 			'file'  => get_attached_file( $attachment->ID ),
 		);
+	}
+
+	return $post_data;
+}
+
+/**
+ * Export post as JSON
+ */
+function sei_export_post_as_json() {
+	// Check if post ID is provided
+	if ( ! ( isset( $_GET['post'] ) || isset( $_POST['post'] ) || ( isset( $_REQUEST['action'] ) && 'sei_export_post' == $_REQUEST['action'] ) ) ) {
+		wp_die( esc_html__( 'No post to export has been supplied!', SEI_TEXT_DOMAIN ) );
+	}
+
+	// Verify nonce
+	if ( ! isset( $_GET['export_nonce'] ) || ! wp_verify_nonce( $_GET['export_nonce'], 'sei_export_' . absint( $_GET['post'] ) ) ) {
+		wp_die( esc_html__( 'Security check failed', SEI_TEXT_DOMAIN ) );
+	}
+
+	// Check capability
+	$export_capability = get_option( 'sei_export_capability', 'edit_posts' );
+	if ( ! current_user_can( $export_capability ) ) {
+		wp_die( esc_html__( 'You do not have permission to export posts', SEI_TEXT_DOMAIN ) );
+	}
+
+	$post_id = absint( $_GET['post'] );
+	$post = get_post( $post_id );
+
+	if ( ! $post ) {
+		wp_die( esc_html__( 'Post not found', SEI_TEXT_DOMAIN ) );
+	}
+
+	// Collect main post data
+	$post_data = sei_collect_post_data( $post_id );
+
+	if ( ! $post_data ) {
+		wp_die( esc_html__( 'Failed to collect post data', SEI_TEXT_DOMAIN ) );
+	}
+
+	// Check if WPML export is enabled
+	$defaults = sei_get_default_settings();
+	$export_wpml = get_option( 'sei_export_wpml_translations', $defaults['export_wpml_translations'] );
+
+	// Initialize WPML data
+	$post_data['wpml_enabled'] = false;
+	$post_data['original_language'] = null;
+	$post_data['translations'] = array();
+
+	// If WPML export is enabled and WPML is active, collect translations
+	if ( $export_wpml && sei_is_wpml_active() ) {
+		$element_type = 'post_' . $post->post_type;
+		
+		// Get language details for the current post
+		$lang_details = apply_filters( 'wpml_element_language_details', null, array(
+			'element_id'   => $post_id,
+			'element_type' => $element_type
+		) );
+
+		if ( ! empty( $lang_details ) ) {
+			$post_data['wpml_enabled'] = true;
+			$post_data['original_language'] = $lang_details->language_code;
+
+			// Get all translations
+			$translations = sei_get_post_translations( $post_id, $post->post_type );
+
+			if ( ! empty( $translations ) ) {
+				foreach ( $translations as $lang_code => $translation ) {
+					// Skip the current post (it's already in the main data)
+					if ( $translation->element_id == $post_id ) {
+						continue;
+					}
+
+					// Collect translation data
+					$translation_data = sei_collect_post_data( $translation->element_id );
+					
+					if ( $translation_data ) {
+						$translation_data['language_code'] = $lang_code;
+						$post_data['translations'][] = $translation_data;
+					}
+				}
+			}
+		}
 	}
 
 	// Convert to JSON
@@ -487,33 +624,9 @@ function sei_import_page() {
 }
 
 /**
- * Handle post import
+ * Import a single post from data array
  */
-function sei_handle_import() {
-	// Validate file
-	$validation_errors = sei_validate_json_file( $_FILES['json_file'] );
-	if ( ! empty( $validation_errors ) ) {
-		return new WP_Error( 'validation_failed', implode( '<br>', $validation_errors ) );
-	}
-
-	// Read and parse JSON
-	$file = $_FILES['json_file']['tmp_name'];
-	$json_data = file_get_contents( $file );
-	$post_data = json_decode( $json_data, true );
-
-	if ( json_last_error() !== JSON_ERROR_NONE ) {
-		return new WP_Error( 'invalid_json', __( 'Invalid JSON file', SEI_TEXT_DOMAIN ) );
-	}
-
-	// Check if required fields exist
-	if ( empty( $post_data['post_title'] ) || empty( $post_data['post_type'] ) ) {
-		return new WP_Error( 'missing_fields', __( 'Required fields missing in JSON file', SEI_TEXT_DOMAIN ) );
-	}
-
-	// Get import status from settings
-	$defaults = sei_get_default_settings();
-	$import_status = get_option( 'sei_import_status', $defaults['import_status'] );
-
+function sei_import_single_post( $post_data, $import_status ) {
 	// Prepare post data for import
 	$new_post_data = array(
 		'post_title'    => sanitize_text_field( $post_data['post_title'] ) . ' - imported',
@@ -593,11 +706,163 @@ function sei_handle_import() {
 		}
 	}
 
-	// Return success message
-	$edit_link = esc_url( admin_url( 'post.php?action=edit&post=' . $new_post_id ) );
-	return sprintf(
-		__( 'Post "<a href="%s">%s</a>" was successfully imported!', SEI_TEXT_DOMAIN ),
-		$edit_link,
-		esc_html( $new_post_data['post_title'] )
-	);
+	return $new_post_id;
+}
+
+/**
+ * Connect WPML translations
+ */
+function sei_connect_wpml_translations( $original_post_id, $original_lang, $translations_map ) {
+	if ( ! sei_is_wpml_active() || empty( $translations_map ) ) {
+		return;
+	}
+
+	global $sitepress;
+	
+	// Get post type
+	$post_type = get_post_type( $original_post_id );
+	$element_type = 'post_' . $post_type;
+
+	// Generate a new trid (translation group ID)
+	$trid = $sitepress->get_element_trid( $original_post_id, $element_type );
+	
+	if ( ! $trid ) {
+		// Create new translation group
+		$trid = null;
+	}
+
+	// Set language for original post
+	do_action( 'wpml_set_element_language_details', array(
+		'element_id'           => $original_post_id,
+		'element_type'         => $element_type,
+		'trid'                 => $trid,
+		'language_code'        => $original_lang,
+		'source_language_code' => null
+	) );
+
+	// Get the trid after setting the original
+	$trid = $sitepress->get_element_trid( $original_post_id, $element_type );
+
+	// Connect all translations
+	foreach ( $translations_map as $lang_code => $translation_post_id ) {
+		do_action( 'wpml_set_element_language_details', array(
+			'element_id'           => $translation_post_id,
+			'element_type'         => $element_type,
+			'trid'                 => $trid,
+			'language_code'        => $lang_code,
+			'source_language_code' => $original_lang
+		) );
+	}
+}
+
+/**
+ * Handle post import
+ */
+function sei_handle_import() {
+	// Validate file
+	$validation_errors = sei_validate_json_file( $_FILES['json_file'] );
+	if ( ! empty( $validation_errors ) ) {
+		return new WP_Error( 'validation_failed', implode( '<br>', $validation_errors ) );
+	}
+
+	// Read and parse JSON
+	$file = $_FILES['json_file']['tmp_name'];
+	$json_data = file_get_contents( $file );
+	$post_data = json_decode( $json_data, true );
+
+	if ( json_last_error() !== JSON_ERROR_NONE ) {
+		return new WP_Error( 'invalid_json', __( 'Invalid JSON file', SEI_TEXT_DOMAIN ) );
+	}
+
+	// Check if required fields exist
+	if ( empty( $post_data['post_title'] ) || empty( $post_data['post_type'] ) ) {
+		return new WP_Error( 'missing_fields', __( 'Required fields missing in JSON file', SEI_TEXT_DOMAIN ) );
+	}
+
+	// Get import status from settings
+	$defaults = sei_get_default_settings();
+	$import_status = get_option( 'sei_import_status', $defaults['import_status'] );
+
+	// Import main post
+	$new_post_id = sei_import_single_post( $post_data, $import_status );
+
+	if ( is_wp_error( $new_post_id ) ) {
+		return $new_post_id;
+	}
+
+	$success_message = '';
+	$imported_count = 1;
+
+	// Check if WPML data exists in the import
+	$has_wpml_data = ! empty( $post_data['wpml_enabled'] ) && $post_data['wpml_enabled'];
+	
+	if ( $has_wpml_data ) {
+		$wpml_active = sei_is_wpml_active();
+		
+		if ( $wpml_active && ! empty( $post_data['translations'] ) ) {
+			// WPML is active - import translations and connect them
+			$original_lang = ! empty( $post_data['original_language'] ) ? $post_data['original_language'] : 'en';
+			$translations_map = array();
+
+			// Import each translation
+			foreach ( $post_data['translations'] as $translation_data ) {
+				$lang_code = ! empty( $translation_data['language_code'] ) ? $translation_data['language_code'] : '';
+				
+				if ( empty( $lang_code ) ) {
+					continue;
+				}
+
+				$translation_post_id = sei_import_single_post( $translation_data, $import_status );
+				
+				if ( ! is_wp_error( $translation_post_id ) ) {
+					$translations_map[$lang_code] = $translation_post_id;
+					$imported_count++;
+				}
+			}
+
+			// Connect all translations via WPML
+			if ( ! empty( $translations_map ) ) {
+				sei_connect_wpml_translations( $new_post_id, $original_lang, $translations_map );
+			}
+
+			$success_message = sprintf(
+				__( 'Post "<a href="%s">%s</a>" and %d translation(s) were successfully imported and connected via WPML!', SEI_TEXT_DOMAIN ),
+				esc_url( admin_url( 'post.php?action=edit&post=' . $new_post_id ) ),
+				esc_html( sanitize_text_field( $post_data['post_title'] ) . ' - imported' ),
+				count( $translations_map )
+			);
+		} elseif ( ! $wpml_active && ! empty( $post_data['translations'] ) ) {
+			// WPML is NOT active - import translations as separate posts
+			foreach ( $post_data['translations'] as $translation_data ) {
+				$translation_post_id = sei_import_single_post( $translation_data, $import_status );
+				
+				if ( ! is_wp_error( $translation_post_id ) ) {
+					$imported_count++;
+				}
+			}
+
+			$success_message = sprintf(
+				__( 'Post "<a href="%s">%s</a>" and %d translation(s) were imported as separate posts. <strong>Note:</strong> WPML is not active, so translations were not connected.', SEI_TEXT_DOMAIN ),
+				esc_url( admin_url( 'post.php?action=edit&post=' . $new_post_id ) ),
+				esc_html( sanitize_text_field( $post_data['post_title'] ) . ' - imported' ),
+				$imported_count - 1
+			);
+		} else {
+			// WPML data exists but no translations
+			$success_message = sprintf(
+				__( 'Post "<a href="%s">%s</a>" was successfully imported!', SEI_TEXT_DOMAIN ),
+				esc_url( admin_url( 'post.php?action=edit&post=' . $new_post_id ) ),
+				esc_html( sanitize_text_field( $post_data['post_title'] ) . ' - imported' )
+			);
+		}
+	} else {
+		// No WPML data - regular import
+		$success_message = sprintf(
+			__( 'Post "<a href="%s">%s</a>" was successfully imported!', SEI_TEXT_DOMAIN ),
+			esc_url( admin_url( 'post.php?action=edit&post=' . $new_post_id ) ),
+			esc_html( sanitize_text_field( $post_data['post_title'] ) . ' - imported' )
+		);
+	}
+
+	return $success_message;
 }
