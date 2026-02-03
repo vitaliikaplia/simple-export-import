@@ -14,11 +14,13 @@ Simple Export & Import allows you to easily export WordPress posts to JSON forma
   - Taxonomies (categories, tags, custom taxonomies)
   - Featured images (attachment references)
   - Post attachments (file references)
+  - WPML translations (optional, when enabled)
 
 - **Flexible Settings**
   - Choose which post types can be exported
   - Set user capabilities for export/import operations
   - Configure default status for imported posts
+  - Enable/disable WPML translation export
 
 - **Security First**
   - Nonce verification for all operations
@@ -30,6 +32,7 @@ Simple Export & Import allows you to easily export WordPress posts to JSON forma
   - Export links directly in post list actions
   - Simple import page in Tools menu
   - Clean settings page
+  - WPML translation export toggle when WPML is active
 
 ## Installation
 
@@ -47,6 +50,7 @@ Navigate to **Settings → Export & Import** to configure:
 2. **Export Capability** - Choose minimum user capability required to export posts
 3. **Import Capability** - Choose minimum user capability required to import posts
 4. **Import Status** - Set default status for imported posts (draft, publish, pending, private)
+5. **WPML Translations** - Include all WPML translations in the same export file (when WPML is active)
 
 ### Exporting Posts
 
@@ -55,7 +59,7 @@ Navigate to **Settings → Export & Import** to configure:
 3. Click the **Export** link in the row actions
 4. A JSON file will be downloaded to your computer
 
-The exported file contains all post data in a structured JSON format.
+The exported file contains all post data in a structured JSON format. If WPML translations export is enabled and WPML is active, the file will include all translations as well.
 
 ### Importing Posts
 
@@ -64,6 +68,10 @@ The exported file contains all post data in a structured JSON format.
 3. Click **Import Post**
 4. The post will be created with the status configured in settings
 5. A success message will appear with a link to edit the imported post
+
+If the import file contains WPML translations:
+- With WPML active, translations are imported and connected as a translation set
+- Without WPML active, translations are imported as separate posts
 
 ## What Gets Exported/Imported
 
@@ -77,6 +85,7 @@ The exported file contains all post data in a structured JSON format.
 - **Taxonomies** - All terms with IDs, names, and slugs
 - **Featured Image** - Attachment ID, URL, and file path
 - **Attachments** - All attached media with IDs and file information
+- **WPML Metadata (optional)** - Whether WPML data is present, original language, and translation entries
 
 ### Import Behavior
 
@@ -86,6 +95,7 @@ The exported file contains all post data in a structured JSON format.
 - **Taxonomies** - Terms are assigned if they exist (by ID or slug)
 - **Featured Image** - Set if attachment ID exists in the target site
 - **Attachments** - Associated with new post if they exist in the target site
+- **WPML Translations** - When present, translations are imported and linked if WPML is active; otherwise they are imported as separate posts
 
 **Note:** Files themselves are NOT exported/imported - only references (IDs and paths). This is intentional to keep export files small and portable.
 
@@ -121,7 +131,31 @@ Exports are saved as JSON files with UTF-8 encoding. Example structure:
     "url": "...",
     "file": "..."
   },
-  "attachments": []
+  "attachments": [],
+  "wpml_enabled": true,
+  "original_language": "en",
+  "translations": [
+    {
+      "language_code": "fr",
+      "ID": 124,
+      "post_title": "Exemple",
+      "post_content": "...",
+      "post_excerpt": "...",
+      "post_status": "publish",
+      "post_name": "pryklad",
+      "post_type": "post",
+      "post_author": "1",
+      "post_date": "2024-01-01 12:00:00",
+      "meta_fields": {},
+      "taxonomies": {},
+      "featured_image": {
+        "id": 0,
+        "url": "",
+        "file": ""
+      },
+      "attachments": []
+    }
+  ]
 }
 ```
 
@@ -130,6 +164,7 @@ Exports are saved as JSON files with UTF-8 encoding. Example structure:
 - WordPress 4.7 or higher
 - PHP 5.6 or higher
 - JSON support (enabled by default in PHP)
+- WPML (optional, required only for translation export/import linking)
 
 ## Security
 
@@ -159,6 +194,14 @@ The plugin checks if taxonomies and terms exist. If a taxonomy doesn't exist, it
 
 Currently, posts must be exported individually. Bulk export is a potential future feature.
 
+### Q: Does this support WPML translations?
+
+Yes. When WPML is active, you can enable “WPML Translations” in settings to export all translations in a single JSON file. On import, translations will be linked as a WPML translation set.
+
+### Q: What happens if WPML is not active during import?
+
+If the import file contains WPML translations but WPML is not active, the plugin imports each translation as a separate post and does not connect them.
+
 ### Q: What about custom post types?
 
 Yes! In settings, you can select any public post type for export functionality.
@@ -168,6 +211,10 @@ Yes! In settings, you can select any public post type for export functionality.
 Yes, ACF fields are stored as post meta and will be included in the export.
 
 ## Changelog
+
+### 1.1
+- WPML translation export/import support (single JSON with translations)
+- Automatic translation linking on import when WPML is active
 
 ### 1.0
 - Initial release
