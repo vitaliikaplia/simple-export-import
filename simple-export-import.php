@@ -21,6 +21,7 @@ define( 'SEI_VERSION', '1.2' );
 define( 'SEI_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SEI_URL', plugin_dir_url( __FILE__ ) );
 define( 'SEI_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+define( 'SEI_GITHUB_BRANCH', 'master' );
 
 require_once SEI_PATH . 'includes/helpers.php';
 require_once SEI_PATH . 'includes/class-sei-multilingual.php';
@@ -28,6 +29,7 @@ require_once SEI_PATH . 'includes/class-sei-media.php';
 require_once SEI_PATH . 'includes/class-sei-settings.php';
 require_once SEI_PATH . 'includes/class-sei-export.php';
 require_once SEI_PATH . 'includes/class-sei-import.php';
+require_once SEI_PATH . 'includes/class-sei-github-updater.php';
 
 add_action( 'plugins_loaded', function () {
 	load_plugin_textdomain( 'simple-export-import', false, dirname( SEI_PLUGIN_BASENAME ) . '/languages' );
@@ -35,4 +37,8 @@ add_action( 'plugins_loaded', function () {
 	SEI_Settings::init();
 	SEI_Export::init();
 	SEI_Import::init();
+
+	// Instantiate the updater early so it's hooked before WP's
+	// twice-daily cron checks the plugins transient.
+	new SEI_GitHub_Updater();
 } );
