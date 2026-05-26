@@ -1,242 +1,211 @@
 # Simple Export & Import
 
-A professional WordPress plugin for exporting and importing posts with complete data preservation.
+A WordPress plugin for exporting and importing posts as JSON with **full Gutenberg / ACF / multilingual** support.
 
 ## Description
 
-Simple Export & Import allows you to easily export WordPress posts to JSON format and import them back with full data preservation. Perfect for migrating content between sites, creating backups of individual posts, or duplicating content.
+Simple Export & Import exports any post to a portable JSON file and imports it back on another site without losing data. It correctly preserves:
 
-### Key Features
+- Gutenberg blocks (including InnerBlocks and nested structures)
+- ACF blocks (the JSON inside `<!-- wp:acf/... -->` block comments)
+- ACF Repeater / Group / Flexible Content fields (via `_field_*` references)
+- Custom fields (post meta), taxonomies, featured image, attachment references
+- Cyrillic and other UTF-8 content (no escaping)
+- WPML translations — and **WP-LOC** translations (any plugin exposing the WPML hook surface)
 
-- **Complete Data Export** - Exports all post data including:
-  - Post content, title, excerpt, status, and metadata
-  - Custom fields (post meta)
-  - Taxonomies (categories, tags, custom taxonomies)
-  - Featured images (attachment references)
-  - Post attachments (file references)
-  - WPML translations (optional, when enabled)
+### Why a dedicated plugin?
 
-- **Flexible Settings**
-  - Choose which post types can be exported
-  - Set user capabilities for export/import operations
-  - Configure default status for imported posts
-  - Enable/disable WPML translation export
+The trap with naive WP import scripts is that `wp_insert_post()` and `update_post_meta()` internally call `wp_unslash()`. JSON-decoded content has no slashes, so backslashes inside Gutenberg/ACF block attributes get silently stripped — corrupting blocks. This plugin calls `wp_slash()` on every string before passing it to WordPress, so block JSON survives intact.
 
-- **Security First**
-  - Nonce verification for all operations
-  - Capability checks
-  - File validation and sanitization
-  - Secure data handling
+## File Structure
 
-- **User-Friendly Interface**
-  - Export links directly in post list actions
-  - Simple import page in Tools menu
-  - Clean settings page
-  - WPML translation export toggle when WPML is active
+```
+simple-export-import/
+├── simple-export-import.php          # Bootstrap (constants, requires, init)
+├── uninstall.php                     # Cleans up options on plugin delete
+├── README.md
+├── includes/
+│   ├── helpers.php                   # Defaults, capabilities, validation, multilingual detection
+│   ├── class-sei-multilingual.php    # WPML / WP-LOC compatibility layer
+│   ├── class-sei-settings.php        # Settings page, option registration
+│   ├── class-sei-export.php          # JSON export + post row actions
+│   └── class-sei-import.php          # Tools → Import Post page + post insertion
+└── languages/
+    ├── simple-export-import.pot      # Translation template
+    ├── simple-export-import-uk.po/.mo    # Ukrainian
+    ├── simple-export-import-de_DE.po/.mo # German
+    └── simple-export-import-ru_RU.po/.mo # Russian
+```
+
+No Composer / external dependencies — the plugin uses plain `require_once`.
 
 ## Installation
 
-1. Upload the `simple-export-import` folder to `/wp-content/plugins/`
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Go to Settings → Export & Import to configure the plugin
+1. Upload the `simple-export-import` folder to `/wp-content/plugins/`.
+2. Activate via **Plugins** menu.
+3. Configure under **Settings → Export & Import**.
+
+## Settings
+
+The settings page is grouped into five sections.
+
+### General
+- **Post Types** — which post types get the Export row action.
+
+### Permissions
+- **Export Capability** — minimum capability required to export.
+- **Import Capability** — minimum capability required to import.
+
+### Import Behavior
+- **Import Status** — default post status for imported posts (Draft / Published / Pending / Private).
+- **Import Title Suffix** — text appended to imported titles. Default ` - imported`; leave empty to keep the original title unchanged.
+- **Preserve Original Author** — when enabled and the original author's user ID exists on this site, they are kept as the author; otherwise the current user becomes the author.
+
+### Export Behavior
+- **Pretty-print JSON** — toggle indentation (off = smaller files).
+- **Extra Meta Keys to Skip** — additional meta keys to exclude from export, one per line. WordPress internals (`_edit_lock`, `_wp_trash_meta_status`, etc.) are already skipped.
+- **Max Upload Size (MB)** — limit on uploaded JSON file size at import time.
+
+### Media
+- **Embed Media Files** — when on, every attachment referenced by the post (featured image, attached media, Gutenberg/ACF blocks, post meta including nested ACF Repeater/Group/Flexible) is embedded as base64 in the JSON. On import, each is recreated on the target site and **all references are remapped** from old IDs to new IDs across post_content (via `parse_blocks`/`serialize_blocks`), block attributes, meta fields, and `wp-image-N` / `data-id` / `[gallery ids=""]` legacy markup. URLs are remapped too. Multilingual-aware: the same image referenced across translation posts is uploaded once and all language posts get the same new ID.
+- **Max Embedded File Size (KB)** — files above this limit are exported as references only (old behavior). Default 10240 (10 MB).
+
+### Multilingual
+- **Multilingual Translations** — when active, exporting any post bundles all of its translations into the same JSON. On import, translations are recreated and re-connected via the multilingual plugin. Auto-disabled if no compatible plugin is detected.
 
 ## Usage
 
-### Configuration
+### Export
+1. Open any post list (Posts, Pages, or a custom post type enabled in Settings).
+2. Hover a row → click **Export** under the row actions.
+3. A JSON file downloads with everything needed to recreate the post.
 
-Navigate to **Settings → Export & Import** to configure:
+### Import
+1. Go to **Tools → Import Post**.
+2. Pick a JSON file produced by this plugin.
+3. Click **Import Post**.
+4. A success notice with a link to the new post appears.
 
-1. **Post Types** - Select which post types should have export functionality
-2. **Export Capability** - Choose minimum user capability required to export posts
-3. **Import Capability** - Choose minimum user capability required to import posts
-4. **Import Status** - Set default status for imported posts (draft, publish, pending, private)
-5. **WPML Translations** - Include all WPML translations in the same export file (when WPML is active)
+## Multilingual support (WPML & WP-LOC)
 
-### Exporting Posts
+The plugin talks to multilingual backends through the **WPML hook surface only**: `wpml_element_language_details`, `wpml_get_element_translations`, `wpml_element_trid`, `wpml_set_element_language_details`. This means it works transparently with:
 
-1. Navigate to the post type list (Posts, Pages, or custom post types)
-2. Hover over the post you want to export
-3. Click the **Export** link in the row actions
-4. A JSON file will be downloaded to your computer
+- **WPML** itself
+- **WP-LOC** (lightweight multilingual plugin that emulates the WPML hooks)
+- Any other plugin registering the same hooks
 
-The exported file contains all post data in a structured JSON format. If WPML translations export is enabled and WPML is active, the file will include all translations as well.
+Detection is automatic (`sei_is_multilingual_active()` in `includes/helpers.php`). Language codes round-trip in WPML format (`en`, `uk`, `de`...) regardless of the underlying plugin's internal representation.
 
-### Importing Posts
+### Round-trip matrix
 
-1. Navigate to **Tools → Import Post**
-2. Click **Choose File** and select your JSON export file
-3. Click **Import Post**
-4. The post will be created with the status configured in settings
-5. A success message will appear with a link to edit the imported post
+| Export from | Import to | Result |
+|---|---|---|
+| WPML | WPML | ✅ connected |
+| WPML | WP-LOC | ✅ connected |
+| WP-LOC | WP-LOC | ✅ connected |
+| WP-LOC | WPML | ✅ connected |
+| any | site without multilingual plugin | ⚠️ imported as separate posts with a notice |
 
-If the import file contains WPML translations:
-- With WPML active, translations are imported and connected as a translation set
-- Without WPML active, translations are imported as separate posts
-
-## What Gets Exported/Imported
-
-### Exported Data
-
-- Post ID (reference only)
-- Post title, content, excerpt
-- Post status, name (slug), type
-- Post author ID, post date
-- **Meta Fields** - All custom fields (excluding internal WordPress meta starting with `_`)
-- **Taxonomies** - All terms with IDs, names, and slugs
-- **Featured Image** - Attachment ID, URL, and file path
-- **Attachments** - All attached media with IDs and file information
-- **WPML Metadata (optional)** - Whether WPML data is present, original language, and translation entries
-
-### Import Behavior
-
-- **New Post Creation** - Always creates a new post (doesn't update existing)
-- **Post Title** - Appends " - imported" to distinguish from original
-- **Meta Fields** - Restored if valid
-- **Taxonomies** - Terms are assigned if they exist (by ID or slug)
-- **Featured Image** - Set if attachment ID exists in the target site
-- **Attachments** - Associated with new post if they exist in the target site
-- **WPML Translations** - When present, translations are imported and linked if WPML is active; otherwise they are imported as separate posts
-
-**Note:** Files themselves are NOT exported/imported - only references (IDs and paths). This is intentional to keep export files small and portable.
-
-## File Format
-
-Exports are saved as JSON files with UTF-8 encoding. Example structure:
+## What gets exported
 
 ```json
 {
   "ID": 123,
   "post_title": "Sample Post",
-  "post_content": "...",
+  "post_content": "<!-- wp:paragraph --><p>...</p><!-- /wp:paragraph -->",
   "post_excerpt": "...",
   "post_status": "publish",
   "post_name": "sample-post",
   "post_type": "post",
   "post_author": "1",
   "post_date": "2024-01-01 12:00:00",
-  "meta_fields": {
-    "custom_field": "value"
-  },
-  "taxonomies": {
-    "category": [
-      {
-        "term_id": 5,
-        "name": "News",
-        "slug": "news"
-      }
-    ]
-  },
-  "featured_image": {
-    "id": 456,
-    "url": "...",
-    "file": "..."
-  },
-  "attachments": [],
+  "meta_fields": { "custom_field": "value", "_field_5e0a1b2c": "..." },
+  "taxonomies": { "category": [ { "term_id": 5, "name": "News", "slug": "news" } ] },
+  "featured_image": { "id": 456, "url": "...", "file": "..." },
+  "attachments": [ ... ],
   "wpml_enabled": true,
   "original_language": "en",
   "translations": [
-    {
-      "language_code": "fr",
-      "ID": 124,
-      "post_title": "Exemple",
-      "post_content": "...",
-      "post_excerpt": "...",
-      "post_status": "publish",
-      "post_name": "pryklad",
-      "post_type": "post",
-      "post_author": "1",
-      "post_date": "2024-01-01 12:00:00",
-      "meta_fields": {},
-      "taxonomies": {},
-      "featured_image": {
-        "id": 0,
-        "url": "",
-        "file": ""
-      },
-      "attachments": []
-    }
+    { "language_code": "uk", "post_title": "...", "post_content": "...", "meta_fields": {...}, ... }
   ]
 }
 ```
 
+**Note:** files (actual images) are not embedded — only references (IDs and paths). The attachment is associated with the new post on import if the same attachment ID already exists in the target media library.
+
+## Localization
+
+Bundled translations: Ukrainian (`uk`), German (`de_DE`), Russian (`ru_RU`).
+
+To add a new language:
+1. Open `languages/simple-export-import.pot` in Poedit or any PO editor.
+2. Save as `simple-export-import-{locale}.po` (e.g. `simple-export-import-pl_PL.po`).
+3. Compile to `.mo`: `msgfmt -o simple-export-import-{locale}.mo simple-export-import-{locale}.po`.
+4. WordPress picks the right file based on the site locale.
+
 ## Requirements
 
-- WordPress 4.7 or higher
-- PHP 5.6 or higher
-- JSON support (enabled by default in PHP)
-- WPML (optional, required only for translation export/import linking)
+- WordPress 4.7+
+- PHP 7.4+
+- JSON support (default in PHP)
 
 ## Security
 
-The plugin implements multiple security measures:
+- Nonce verification on every export request and import form
+- Capability checks (configurable per action)
+- File size + extension + JSON-validity check on upload
+- All input sanitized; output escaped
+- `wp_kses` applied by core based on the importing user's `unfiltered_html` capability — admins import unmodified content, lower-privileged users get filtered content
 
-- **Nonce Verification** - All forms and actions are protected
-- **Capability Checks** - User permissions are verified before operations
-- **File Validation** - Uploaded files are validated (extension, size, JSON format)
-- **Data Sanitization** - All input is sanitized and output is escaped
-- **Size Limit** - Import files limited to 5MB
+## FAQ
 
-## Frequently Asked Questions
+**Q: Are image files exported?**
+No, only references (IDs and file paths). The attachment is reused by ID on the target site if it exists. This keeps export files small.
 
-### Q: Are the actual image files exported?
+**Q: Does import update an existing post?**
+No, every import creates a new post. The title suffix (default ` - imported`) distinguishes copies; set the suffix to empty in Settings to keep original titles.
 
-No, only references (IDs and file paths) are exported. This keeps export files small. When importing, the plugin attempts to map existing attachments by ID.
+**Q: Do ACF Repeater / Group fields work?**
+Yes. Both the field values and the `_field_*` key references are exported, which is what ACF needs to render the fields in admin.
 
-### Q: Can I update an existing post with import?
+**Q: Will Gutenberg blocks with backslashes / quotes in attributes break?**
+No. The plugin calls `wp_slash()` before `wp_insert_post()` / `update_post_meta()` so backslashes in block JSON survive the WP-internal `wp_unslash()` call. This is the most common cause of broken ACF blocks after generic JSON imports.
 
-No, the plugin always creates a new post. This is by design to prevent accidental overwrites.
-
-### Q: What happens if taxonomies don't exist on import?
-
-The plugin checks if taxonomies and terms exist. If a taxonomy doesn't exist, it's skipped. If terms exist (by ID or slug), they're assigned to the imported post.
-
-### Q: Can I export multiple posts at once?
-
-Currently, posts must be exported individually. Bulk export is a potential future feature.
-
-### Q: Does this support WPML translations?
-
-Yes. When WPML is active, you can enable “WPML Translations” in settings to export all translations in a single JSON file. On import, translations will be linked as a WPML translation set.
-
-### Q: What happens if WPML is not active during import?
-
-If the import file contains WPML translations but WPML is not active, the plugin imports each translation as a separate post and does not connect them.
-
-### Q: What about custom post types?
-
-Yes! In settings, you can select any public post type for export functionality.
-
-### Q: Are ACF (Advanced Custom Fields) fields exported?
-
-Yes, ACF fields are stored as post meta and will be included in the export.
+**Q: Can I bulk-export?**
+Not yet — one post per JSON file. Each post can carry all its translations though.
 
 ## Changelog
 
+### 1.2
+- **Direct `$wpdb` imports** — `wp_insert_post()`, `update_post_meta()`, `wp_set_post_terms()`, `set_post_thumbnail()`, `wp_update_post()` all replaced with raw `$wpdb` operations. Third-party `save_post` / `transition_post_status` / `added_post_meta` / `set_object_terms` hooks no longer fire on import, eliminating content mutation, validation errors, and recursion from imported posts.
+- **Yoast SEO indexable rebuild** — after meta restore, `Indexable_Builder::build_for_id_and_type()` is called explicitly so the `wp_yoast_indexable` cache reflects imported `_yoast_wpseo_*` postmeta. Same hook for RankMath.
+- **Media embed (opt-in)** — JSON now optionally carries base64-encoded files for every referenced attachment (featured image, attached media, Gutenberg/ACF block images, ACF Image/File/Gallery fields including nested Repeater/Group/Flexible). On import: re-create attachments via `$wpdb` + `wp_generate_attachment_metadata`, build a single deduplicated `old_id → new_id` map across the main post and all translations, and rewrite references in post_content (via `parse_blocks`/`serialize_blocks`), block attrs, meta values (recursive), legacy `wp-image-N` / `data-id` / `[gallery ids=""]`, and URLs. New settings: Embed Media Files, Max Embedded File Size (KB).
+- **Export fidelity**: `post_date_gmt`, `comment_status`, `ping_status`, `menu_order` added so direct `$wpdb` insert can reconstruct the full row.
+- **Unique slug generator** — `wp_unique_post_slug()` replaced with a direct posts-table lookup (no hook chain).
+- New translation strings: media/Yoast/$wpdb error messages. Total 75 strings translated across uk / de_DE / ru_RU.
+
 ### 1.1
-- WPML translation export/import support (single JSON with translations)
-- Automatic translation linking on import when WPML is active
+- **Critical fix**: `wp_slash()` on `post_content` / `post_excerpt` / meta values before `wp_insert_post()` and `update_post_meta()`. Gutenberg and ACF blocks no longer break on import due to WP's internal `wp_unslash()` stripping backslashes from block JSON.
+- **Removed `wp_kses_post()` wrapper** on content — `wp_insert_post()` already applies kses based on user capability; the duplicate call sometimes corrupted custom block markup.
+- **ACF fields** (Repeater / Group / Flexible Content) now export correctly: `_field_*` references are no longer stripped. Built-in skip list now whitelists only true WP internals.
+- **WP-LOC support**: detection via `class WP_LOC` and `has_filter('wpml_*')`, plus normalization of `wpml_element_language_details` (object vs array) so wp-loc's return shape works alongside WPML's.
+- **No more `$sitepress` dependency** — translation connecting uses `apply_filters('wpml_element_trid', ...)` for portability.
+- **Reorganized**: monolithic file split into `includes/` (helpers + 4 classes). Main file is now a thin bootstrap.
+- **New settings**: Import Title Suffix, Preserve Original Author, Extra Meta Keys to Skip, Max Upload Size (MB), Pretty-print JSON.
+- **Localization**: Ukrainian, German, Russian translations bundled. `.pot` template included for new languages.
+- **uninstall.php** removes every plugin option on plugin delete (multisite-aware).
 
 ### 1.0
-- Initial release
-- Export posts to JSON
-- Import posts from JSON
-- Settings page with post type and capability configuration
-- Support for meta fields, taxonomies, and attachments
-- Security features (nonce, capabilities, validation)
+- Initial release.
 
 ## Author
 
-**Vitalii Kaplia**
-Website: [https://vitaliikaplia.com/](https://vitaliikaplia.com/)
+**Vitalii Kaplia** — [vitaliikaplia.com](https://vitaliikaplia.com/)
 
 ## License
 
-This plugin is licensed under GPLv2 or later.
+GPLv2 or later.
 
 ## Support
 
-For issues, questions, or feature requests, please contact the author or submit an issue on the plugin repository.
-
----
-
-**Made with ❤️ for the WordPress community**
+For issues or feature requests, please contact the author.

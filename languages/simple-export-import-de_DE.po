@@ -1,0 +1,378 @@
+# German translation for Simple Export & Import.
+# Copyright (C) 2026 Vitalii Kaplia
+# This file is distributed under the same license as the Simple Export & Import package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Simple Export & Import 1.1\n"
+"Report-Msgid-Bugs-To: https://vitaliikaplia.com/\n"
+"POT-Creation-Date: 2026-05-26 19:51+0300\n"
+"PO-Revision-Date: 2026-05-26 19:30+0300\n"
+"Last-Translator: Vitalii Kaplia <noreply@vitaliikaplia.com>\n"
+"Language-Team: German\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: includes/class-sei-export.php:118
+msgid "No post to export has been supplied!"
+msgstr "Kein Beitrag zum Exportieren angegeben!"
+
+#: includes/class-sei-export.php:124 includes/class-sei-import.php:47
+msgid "Security check failed"
+msgstr "Sicherheitsprüfung fehlgeschlagen"
+
+#: includes/class-sei-export.php:129
+msgid "You do not have permission to export posts"
+msgstr "Sie haben keine Berechtigung, Beiträge zu exportieren"
+
+#: includes/class-sei-export.php:134
+msgid "Post not found"
+msgstr "Beitrag nicht gefunden"
+
+#: includes/class-sei-export.php:139
+msgid "Failed to collect post data"
+msgstr "Beitragsdaten konnten nicht erfasst werden"
+
+#: includes/class-sei-export.php:211
+msgid "Export this post"
+msgstr "Diesen Beitrag exportieren"
+
+#: includes/class-sei-export.php:211
+msgid "Export"
+msgstr "Exportieren"
+
+#: includes/class-sei-import.php:23 includes/class-sei-import.php:42
+msgid "Import Post from JSON"
+msgstr "Beitrag aus JSON importieren"
+
+#: includes/class-sei-import.php:24 includes/class-sei-import.php:84
+msgid "Import Post"
+msgstr "Beitrag importieren"
+
+#: includes/class-sei-import.php:35
+msgid "You do not have permission to import posts"
+msgstr "Sie haben keine Berechtigung, Beiträge zu importieren"
+
+#: includes/class-sei-import.php:66
+msgid "JSON File"
+msgstr "JSON-Datei"
+
+#. translators: %d: maximum file size in megabytes
+#: includes/class-sei-import.php:75
+#, php-format
+msgid "Select a JSON file exported from this plugin (max %d MB)"
+msgstr "Wählen Sie eine mit diesem Plugin exportierte JSON-Datei (max. %d MB)"
+
+#: includes/class-sei-import.php:123
+msgid "Post type does not exist on this site"
+msgstr "Beitragstyp existiert auf dieser Website nicht"
+
+#. translators: %s: database error message
+#: includes/class-sei-import.php:184
+#, php-format
+msgid "Database insert failed: %s"
+msgstr "Datenbank-Einfügung fehlgeschlagen: %s"
+
+#: includes/class-sei-import.php:502
+msgid "Invalid JSON file"
+msgstr "Ungültige JSON-Datei"
+
+#: includes/class-sei-import.php:506
+msgid "Required fields missing in JSON file"
+msgstr "In der JSON-Datei fehlen Pflichtfelder"
+
+#. translators: 1: edit URL, 2: post title, 3: translations count
+#: includes/class-sei-import.php:557
+#, php-format
+msgid ""
+"Post \"<a href=\"%1$s\">%2$s</a>\" and %3$d translation(s) were successfully "
+"imported and connected!"
+msgstr ""
+"Beitrag \"<a href=\"%1$s\">%2$s</a>\" und %3$d Übersetzung(en) wurden "
+"erfolgreich importiert und verknüpft!"
+
+#. translators: 1: edit URL, 2: post title, 3: translations count
+#: includes/class-sei-import.php:566
+#, php-format
+msgid ""
+"Post \"<a href=\"%1$s\">%2$s</a>\" and %3$d translation(s) were imported as "
+"separate posts. <strong>Note:</strong> no multilingual plugin (WPML / WP-"
+"LOC) is active, so translations were not connected."
+msgstr ""
+"Beitrag \"<a href=\"%1$s\">%2$s</a>\" und %3$d Übersetzung(en) wurden als "
+"separate Beiträge importiert. <strong>Hinweis:</strong> Es ist kein "
+"mehrsprachiges Plugin (WPML / WP-LOC) aktiv, daher wurden die Übersetzungen "
+"nicht verknüpft."
+
+#. translators: 1: edit URL, 2: post title
+#: includes/class-sei-import.php:575
+#, php-format
+msgid "Post \"<a href=\"%1$s\">%2$s</a>\" was successfully imported!"
+msgstr "Beitrag \"<a href=\"%1$s\">%2$s</a>\" wurde erfolgreich importiert!"
+
+#: includes/class-sei-media.php:226
+msgid "Embedded attachment is missing required fields"
+msgstr "Eingebettete Datei: erforderliche Felder fehlen"
+
+#: includes/class-sei-media.php:231
+msgid "Could not decode embedded attachment"
+msgstr "Eingebettete Datei konnte nicht dekodiert werden"
+
+#: includes/class-sei-media.php:244
+msgid "Failed to write embedded attachment to uploads"
+msgstr "Eingebettete Datei konnte nicht in den Uploads-Ordner geschrieben werden"
+
+#: includes/class-sei-settings.php:82 includes/class-sei-settings.php:124
+msgid "Export & Import Settings"
+msgstr "Export- & Import-Einstellungen"
+
+#: includes/class-sei-settings.php:83
+msgid "Export & Import"
+msgstr "Export & Import"
+
+#: includes/class-sei-settings.php:91
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: includes/class-sei-settings.php:116
+msgid "Draft"
+msgstr "Entwurf"
+
+#: includes/class-sei-settings.php:117
+msgid "Published"
+msgstr "Veröffentlicht"
+
+#: includes/class-sei-settings.php:118
+msgid "Pending Review"
+msgstr "Zur Überprüfung"
+
+#: includes/class-sei-settings.php:119
+msgid "Private"
+msgstr "Privat"
+
+#: includes/class-sei-settings.php:129
+msgid "General"
+msgstr "Allgemein"
+
+#: includes/class-sei-settings.php:132
+msgid "Post Types"
+msgstr "Beitragstypen"
+
+#: includes/class-sei-settings.php:145
+msgid "Select post types that will have export functionality"
+msgstr "Beitragstypen auswählen, für die der Export verfügbar ist"
+
+#: includes/class-sei-settings.php:152
+msgid "Permissions"
+msgstr "Berechtigungen"
+
+#: includes/class-sei-settings.php:156
+msgid "Export Capability"
+msgstr "Export-Berechtigung"
+
+#: includes/class-sei-settings.php:166
+msgid "Minimum capability required to export posts"
+msgstr "Mindestberechtigung zum Exportieren von Beiträgen"
+
+#: includes/class-sei-settings.php:172
+msgid "Import Capability"
+msgstr "Import-Berechtigung"
+
+#: includes/class-sei-settings.php:182
+msgid "Minimum capability required to import posts"
+msgstr "Mindestberechtigung zum Importieren von Beiträgen"
+
+#: includes/class-sei-settings.php:187
+msgid "Import Behavior"
+msgstr "Import-Verhalten"
+
+#: includes/class-sei-settings.php:191
+msgid "Import Status"
+msgstr "Import-Status"
+
+#: includes/class-sei-settings.php:201
+msgid "Default status for imported posts"
+msgstr "Standardstatus für importierte Beiträge"
+
+#: includes/class-sei-settings.php:207
+msgid "Import Title Suffix"
+msgstr "Titel-Suffix beim Import"
+
+#: includes/class-sei-settings.php:212
+msgid ""
+"Appended to imported post titles. Leave empty to keep the original title "
+"unchanged."
+msgstr ""
+"Wird an importierte Beitragstitel angehängt. Leer lassen, um den "
+"Originaltitel beizubehalten."
+
+#: includes/class-sei-settings.php:218
+msgid "Preserve Original Author"
+msgstr "Originalautor beibehalten"
+
+#: includes/class-sei-settings.php:224
+msgid "Use the original author when their user ID exists on this site"
+msgstr ""
+"Originalautor verwenden, falls dessen Benutzer-ID auf dieser Website "
+"existiert"
+
+#: includes/class-sei-settings.php:226
+msgid ""
+"When unchecked, the current user becomes the author of every imported post."
+msgstr ""
+"Wenn deaktiviert, wird der aktuelle Benutzer Autor jedes importierten "
+"Beitrags."
+
+#: includes/class-sei-settings.php:231
+msgid "Export Behavior"
+msgstr "Export-Verhalten"
+
+#: includes/class-sei-settings.php:235
+msgid "Pretty-print JSON"
+msgstr "JSON formatieren"
+
+#: includes/class-sei-settings.php:241
+msgid "Format exported JSON with indentation"
+msgstr "Exportiertes JSON mit Einrückung formatieren"
+
+#: includes/class-sei-settings.php:243
+msgid "Disable for smaller export files."
+msgstr "Für kleinere Exportdateien deaktivieren."
+
+#: includes/class-sei-settings.php:249
+msgid "Extra Meta Keys to Skip"
+msgstr "Zusätzliche Meta-Schlüssel zum Überspringen"
+
+#: includes/class-sei-settings.php:254
+msgid ""
+"Additional meta keys to exclude from export (one per line). WordPress "
+"internal meta (_edit_lock, _wp_trash_meta_status etc.) are skipped by "
+"default."
+msgstr ""
+"Zusätzliche Meta-Schlüssel, die vom Export ausgeschlossen werden sollen "
+"(einer pro Zeile). WordPress-interne Meta (_edit_lock, _wp_trash_meta_status "
+"usw.) werden standardmäßig übersprungen."
+
+#: includes/class-sei-settings.php:260
+msgid "Max Upload Size (MB)"
+msgstr "Maximale Upload-Größe (MB)"
+
+#: includes/class-sei-settings.php:265
+msgid "Maximum size for uploaded JSON files on the Import page."
+msgstr "Maximale Größe für hochgeladene JSON-Dateien auf der Import-Seite."
+
+#: includes/class-sei-settings.php:270
+msgid "Media"
+msgstr "Medien"
+
+#: includes/class-sei-settings.php:274
+msgid "Embed Media Files"
+msgstr "Mediendateien einbetten"
+
+#: includes/class-sei-settings.php:280
+msgid "Embed referenced files as base64 in the JSON export"
+msgstr "Referenzierte Dateien als base64 in den JSON-Export einbetten"
+
+#: includes/class-sei-settings.php:282
+msgid ""
+"Includes featured image, attached media, images inside Gutenberg/ACF blocks, "
+"and any attachment ID referenced from post meta. On import, attachments are "
+"recreated and IDs are remapped across content, blocks, meta and featured "
+"image. Disabled by default — exports stay small when off."
+msgstr ""
+"Enthält Beitragsbild, angehängte Medien, Bilder in Gutenberg/ACF-Blöcken "
+"sowie jede aus Beitrags-Meta referenzierte Anhang-ID. Beim Import werden "
+"Anhänge neu erstellt und IDs in Inhalt, Blöcken, Meta und Beitragsbild "
+"umgemappt. Standardmäßig deaktiviert — ausgeschaltet bleiben Exporte klein."
+
+#: includes/class-sei-settings.php:288
+msgid "Max Embedded File Size (KB)"
+msgstr "Maximale Größe eingebetteter Dateien (KB)"
+
+#: includes/class-sei-settings.php:293
+msgid ""
+"Files larger than this are exported as references only. Default: 10240 (10 "
+"MB)."
+msgstr ""
+"Dateien, die größer als dieser Wert sind, werden nur als Referenz exportiert. "
+"Standard: 10240 (10 MB)."
+
+#: includes/class-sei-settings.php:298
+msgid "Multilingual"
+msgstr "Mehrsprachig"
+
+#: includes/class-sei-settings.php:302
+msgid "Multilingual Translations"
+msgstr "Mehrsprachige Übersetzungen"
+
+#: includes/class-sei-settings.php:311
+msgid "Export with translations (WPML / WP-LOC)"
+msgstr "Mit Übersetzungen exportieren (WPML / WP-LOC)"
+
+#: includes/class-sei-settings.php:316
+msgid ""
+"When enabled, exporting a post will include all of its translations in the "
+"same JSON file. Works with WPML and WP-LOC (any plugin exposing the WPML "
+"hook surface)."
+msgstr ""
+"Wenn aktiviert, enthält der Export eines Beitrags alle seine Übersetzungen "
+"in derselben JSON-Datei. Funktioniert mit WPML und WP-LOC (jedem Plugin, das "
+"die WPML-Hook-Oberfläche bereitstellt)."
+
+#: includes/class-sei-settings.php:318
+msgid ""
+"No multilingual plugin detected. Install and activate WPML or WP-LOC to use "
+"this feature."
+msgstr ""
+"Kein mehrsprachiges Plugin erkannt. Installieren und aktivieren Sie WPML "
+"oder WP-LOC, um diese Funktion zu nutzen."
+
+#: includes/helpers.php:37
+msgid "Read"
+msgstr "Lesen"
+
+#: includes/helpers.php:38
+msgid "Edit Posts"
+msgstr "Beiträge bearbeiten"
+
+#: includes/helpers.php:39
+msgid "Edit Pages"
+msgstr "Seiten bearbeiten"
+
+#: includes/helpers.php:40
+msgid "Edit Published Posts"
+msgstr "Veröffentlichte Beiträge bearbeiten"
+
+#: includes/helpers.php:41
+msgid "Publish Posts"
+msgstr "Beiträge veröffentlichen"
+
+#: includes/helpers.php:42
+msgid "Manage Options"
+msgstr "Optionen verwalten"
+
+#: includes/helpers.php:107
+msgid "No file uploaded"
+msgstr "Keine Datei hochgeladen"
+
+#. translators: %d: maximum file size in megabytes
+#: includes/helpers.php:117
+#, php-format
+msgid "File size exceeds %d MB limit"
+msgstr "Dateigröße überschreitet das Limit von %d MB"
+
+#: includes/helpers.php:124
+msgid "Only JSON files are allowed"
+msgstr "Nur JSON-Dateien sind erlaubt"
+
+#: includes/helpers.php:129
+msgid "Unable to read file"
+msgstr "Datei konnte nicht gelesen werden"
+
+#. translators: %s: JSON parser error message
+#: includes/helpers.php:135
+#, php-format
+msgid "File does not contain valid JSON: %s"
+msgstr "Die Datei enthält kein gültiges JSON: %s"
