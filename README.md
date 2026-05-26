@@ -245,6 +245,11 @@ Not yet — one post per JSON file. Each post can carry all its translations tho
 
 ## Changelog
 
+### 1.3
+- **Fix: block-attribute encoding no longer mangled on import.** The previous version round-tripped post_content through `parse_blocks()` + `serialize_blocks()` to remap attachment IDs. WP core's `serialize_block_attributes()` re-encodes via `wp_json_encode` with `JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_HEX_AMP`, turning every `<` into `<`, every `"` into `"`, etc. Themes / ACF preview / front-end JS parsers relying on raw markup silently broke. v1.3 swaps the round-trip for targeted regex substitutions on whitelisted JSON keys inside block comments — encoding, whitespace, comments, and untouched IDs are preserved byte-for-byte. Two new filters expose the whitelist: `sei_media_scalar_id_keys` and `sei_media_array_id_keys`.
+- **`post_modified` / `post_modified_gmt` preserved 1-to-1.** Export already carried `post_date` / `post_date_gmt`; now the modification timestamps round-trip too, so sitemaps / audit logs / Modified columns line up with the source.
+- **`attachment` excluded from the post-type picker.** Settings no longer offers it as a selectable type, and the Export row action is suppressed on the Media library even if the option still carries `attachment` from an older save. Attachments ride along inside posts via embedded media — they are not standalone exportable entities.
+
 ### 1.2
 - **Direct `$wpdb` imports** — `wp_insert_post()`, `update_post_meta()`, `wp_set_post_terms()`, `set_post_thumbnail()`, `wp_update_post()` all replaced with raw `$wpdb` operations. Third-party `save_post` / `transition_post_status` / `added_post_meta` / `set_object_terms` hooks no longer fire on import, eliminating content mutation, validation errors, and recursion from imported posts. `wp_slash()` removed from the import path — no longer needed because `$wpdb` does not call `wp_unslash` internally.
 - **Yoast SEO indexable rebuild** — after meta restore, `Indexable_Builder::build_for_id_and_type()` is called explicitly so the `wp_yoast_indexable` cache reflects imported `_yoast_wpseo_*` postmeta. Same hook for Rank Math link cache.

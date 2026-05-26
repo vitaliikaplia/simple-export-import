@@ -136,12 +136,19 @@ class SEI_Import {
 		}
 
 		$post_title = sanitize_text_field( $post_data['post_title'] ) . $title_suffix;
-		$post_date  = ! empty( $post_data['post_date'] ) ? $post_data['post_date'] : current_time( 'mysql' );
-		$post_date_gmt = ! empty( $post_data['post_date_gmt'] )
+		$now_local      = current_time( 'mysql' );
+		$now_gmt        = current_time( 'mysql', true );
+		$post_date      = ! empty( $post_data['post_date'] ) ? $post_data['post_date'] : $now_local;
+		$post_date_gmt  = ! empty( $post_data['post_date_gmt'] )
 			? $post_data['post_date_gmt']
 			: get_gmt_from_date( $post_date );
-		$now_local  = current_time( 'mysql' );
-		$now_gmt    = current_time( 'mysql', true );
+		// Preserve original modification timestamp when carried in the export
+		// (1-to-1 fidelity). Older JSON files without those fields fall back
+		// to now() — same behavior as before.
+		$post_modified     = ! empty( $post_data['post_modified'] ) ? $post_data['post_modified'] : $now_local;
+		$post_modified_gmt = ! empty( $post_data['post_modified_gmt'] )
+			? $post_data['post_modified_gmt']
+			: get_gmt_from_date( $post_modified );
 
 		$base_slug = ! empty( $post_data['post_name'] )
 			? sanitize_title( $post_data['post_name'] )
@@ -162,8 +169,8 @@ class SEI_Import {
 			'post_name'             => $post_name,
 			'to_ping'               => '',
 			'pinged'                => '',
-			'post_modified'         => $now_local,
-			'post_modified_gmt'     => $now_gmt,
+			'post_modified'         => $post_modified,
+			'post_modified_gmt'     => $post_modified_gmt,
 			'post_content_filtered' => '',
 			'post_parent'           => 0,
 			'guid'                  => '',
