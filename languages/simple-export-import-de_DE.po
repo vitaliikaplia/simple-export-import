@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Simple Export & Import 1.1\n"
 "Report-Msgid-Bugs-To: https://vitaliikaplia.com/\n"
-"POT-Creation-Date: 2026-05-26 19:51+0300\n"
+"POT-Creation-Date: 2026-05-26 20:27+0300\n"
 "PO-Revision-Date: 2026-05-26 19:30+0300\n"
 "Last-Translator: Vitalii Kaplia <noreply@vitaliikaplia.com>\n"
 "Language-Team: German\n"
@@ -75,16 +75,16 @@ msgstr "Beitragstyp existiert auf dieser Website nicht"
 msgid "Database insert failed: %s"
 msgstr "Datenbank-Einfügung fehlgeschlagen: %s"
 
-#: includes/class-sei-import.php:502
+#: includes/class-sei-import.php:508
 msgid "Invalid JSON file"
 msgstr "Ungültige JSON-Datei"
 
-#: includes/class-sei-import.php:506
+#: includes/class-sei-import.php:512
 msgid "Required fields missing in JSON file"
 msgstr "In der JSON-Datei fehlen Pflichtfelder"
 
 #. translators: 1: edit URL, 2: post title, 3: translations count
-#: includes/class-sei-import.php:557
+#: includes/class-sei-import.php:563
 #, php-format
 msgid ""
 "Post \"<a href=\"%1$s\">%2$s</a>\" and %3$d translation(s) were successfully "
@@ -94,7 +94,7 @@ msgstr ""
 "erfolgreich importiert und verknüpft!"
 
 #. translators: 1: edit URL, 2: post title, 3: translations count
-#: includes/class-sei-import.php:566
+#: includes/class-sei-import.php:572
 #, php-format
 msgid ""
 "Post \"<a href=\"%1$s\">%2$s</a>\" and %3$d translation(s) were imported as "
@@ -107,22 +107,23 @@ msgstr ""
 "nicht verknüpft."
 
 #. translators: 1: edit URL, 2: post title
-#: includes/class-sei-import.php:575
+#: includes/class-sei-import.php:581
 #, php-format
 msgid "Post \"<a href=\"%1$s\">%2$s</a>\" was successfully imported!"
 msgstr "Beitrag \"<a href=\"%1$s\">%2$s</a>\" wurde erfolgreich importiert!"
 
-#: includes/class-sei-media.php:226
+#: includes/class-sei-media.php:277
 msgid "Embedded attachment is missing required fields"
 msgstr "Eingebettete Datei: erforderliche Felder fehlen"
 
-#: includes/class-sei-media.php:231
+#: includes/class-sei-media.php:282
 msgid "Could not decode embedded attachment"
 msgstr "Eingebettete Datei konnte nicht dekodiert werden"
 
-#: includes/class-sei-media.php:244
+#: includes/class-sei-media.php:295
 msgid "Failed to write embedded attachment to uploads"
-msgstr "Eingebettete Datei konnte nicht in den Uploads-Ordner geschrieben werden"
+msgstr ""
+"Eingebettete Datei konnte nicht in den Uploads-Ordner geschrieben werden"
 
 #: includes/class-sei-settings.php:82 includes/class-sei-settings.php:124
 msgid "Export & Import Settings"
@@ -259,23 +260,31 @@ msgstr ""
 msgid "Max Upload Size (MB)"
 msgstr "Maximale Upload-Größe (MB)"
 
-#: includes/class-sei-settings.php:265
-msgid "Maximum size for uploaded JSON files on the Import page."
-msgstr "Maximale Größe für hochgeladene JSON-Dateien auf der Import-Seite."
-
+#. translators: %d: server-side PHP upload ceiling in megabytes (min of upload_max_filesize and post_max_size)
 #: includes/class-sei-settings.php:270
+#, php-format
+msgid ""
+"Maximum size for uploaded JSON files on the Import page. Server cap (PHP "
+"upload_max_filesize / post_max_size): %d MB — values above this have no "
+"effect."
+msgstr ""
+"Maximale Größe für JSON-Dateien auf der Import-Seite. Server-Limit (PHP "
+"upload_max_filesize / post_max_size): %d MB — höhere Werte wirken sich nicht "
+"aus."
+
+#: includes/class-sei-settings.php:279
 msgid "Media"
 msgstr "Medien"
 
-#: includes/class-sei-settings.php:274
+#: includes/class-sei-settings.php:283
 msgid "Embed Media Files"
 msgstr "Mediendateien einbetten"
 
-#: includes/class-sei-settings.php:280
+#: includes/class-sei-settings.php:289
 msgid "Embed referenced files as base64 in the JSON export"
 msgstr "Referenzierte Dateien als base64 in den JSON-Export einbetten"
 
-#: includes/class-sei-settings.php:282
+#: includes/class-sei-settings.php:291
 msgid ""
 "Includes featured image, attached media, images inside Gutenberg/ACF blocks, "
 "and any attachment ID referenced from post meta. On import, attachments are "
@@ -287,31 +296,43 @@ msgstr ""
 "Anhänge neu erstellt und IDs in Inhalt, Blöcken, Meta und Beitragsbild "
 "umgemappt. Standardmäßig deaktiviert — ausgeschaltet bleiben Exporte klein."
 
-#: includes/class-sei-settings.php:288
+#: includes/class-sei-settings.php:297
 msgid "Max Embedded File Size (KB)"
 msgstr "Maximale Größe eingebetteter Dateien (KB)"
 
-#: includes/class-sei-settings.php:293
+#. translators: %d: PHP memory_limit on this server in megabytes
+#: includes/class-sei-settings.php:308
+#, php-format
 msgid ""
-"Files larger than this are exported as references only. Default: 10240 (10 "
-"MB)."
+"Files larger than this are exported as references only. PHP memory_limit on "
+"this server: %d MB — base64 encoding inflates files by ~33%%, so keep this "
+"well under that."
 msgstr ""
-"Dateien, die größer als dieser Wert sind, werden nur als Referenz exportiert. "
-"Standard: 10240 (10 MB)."
+"Dateien, die größer als dieser Wert sind, werden nur als Referenz "
+"exportiert. PHP memory_limit auf diesem Server: %d MB — base64 bläht Dateien "
+"um ca. 33%% auf, daher deutlich darunter halten."
 
-#: includes/class-sei-settings.php:298
+#: includes/class-sei-settings.php:312
+msgid ""
+"Files larger than this are exported as references only. PHP memory_limit on "
+"this server: unlimited."
+msgstr ""
+"Dateien, die größer als dieser Wert sind, werden nur als Referenz "
+"exportiert. PHP memory_limit auf diesem Server: unbegrenzt."
+
+#: includes/class-sei-settings.php:320
 msgid "Multilingual"
 msgstr "Mehrsprachig"
 
-#: includes/class-sei-settings.php:302
+#: includes/class-sei-settings.php:324
 msgid "Multilingual Translations"
 msgstr "Mehrsprachige Übersetzungen"
 
-#: includes/class-sei-settings.php:311
+#: includes/class-sei-settings.php:333
 msgid "Export with translations (WPML / WP-LOC)"
 msgstr "Mit Übersetzungen exportieren (WPML / WP-LOC)"
 
-#: includes/class-sei-settings.php:316
+#: includes/class-sei-settings.php:338
 msgid ""
 "When enabled, exporting a post will include all of its translations in the "
 "same JSON file. Works with WPML and WP-LOC (any plugin exposing the WPML "
@@ -321,7 +342,7 @@ msgstr ""
 "in derselben JSON-Datei. Funktioniert mit WPML und WP-LOC (jedem Plugin, das "
 "die WPML-Hook-Oberfläche bereitstellt)."
 
-#: includes/class-sei-settings.php:318
+#: includes/class-sei-settings.php:340
 msgid ""
 "No multilingual plugin detected. Install and activate WPML or WP-LOC to use "
 "this feature."
@@ -329,50 +350,60 @@ msgstr ""
 "Kein mehrsprachiges Plugin erkannt. Installieren und aktivieren Sie WPML "
 "oder WP-LOC, um diese Funktion zu nutzen."
 
-#: includes/helpers.php:37
+#: includes/helpers.php:79
 msgid "Read"
 msgstr "Lesen"
 
-#: includes/helpers.php:38
+#: includes/helpers.php:80
 msgid "Edit Posts"
 msgstr "Beiträge bearbeiten"
 
-#: includes/helpers.php:39
+#: includes/helpers.php:81
 msgid "Edit Pages"
 msgstr "Seiten bearbeiten"
 
-#: includes/helpers.php:40
+#: includes/helpers.php:82
 msgid "Edit Published Posts"
 msgstr "Veröffentlichte Beiträge bearbeiten"
 
-#: includes/helpers.php:41
+#: includes/helpers.php:83
 msgid "Publish Posts"
 msgstr "Beiträge veröffentlichen"
 
-#: includes/helpers.php:42
+#: includes/helpers.php:84
 msgid "Manage Options"
 msgstr "Optionen verwalten"
 
-#: includes/helpers.php:107
+#: includes/helpers.php:149
 msgid "No file uploaded"
 msgstr "Keine Datei hochgeladen"
 
-#. translators: %d: maximum file size in megabytes
-#: includes/helpers.php:117
+#. translators: %d: effective maximum file size in megabytes (min of plugin setting and PHP cap)
+#: includes/helpers.php:159
 #, php-format
 msgid "File size exceeds %d MB limit"
 msgstr "Dateigröße überschreitet das Limit von %d MB"
 
-#: includes/helpers.php:124
+#: includes/helpers.php:166
 msgid "Only JSON files are allowed"
 msgstr "Nur JSON-Dateien sind erlaubt"
 
-#: includes/helpers.php:129
+#: includes/helpers.php:171
 msgid "Unable to read file"
 msgstr "Datei konnte nicht gelesen werden"
 
 #. translators: %s: JSON parser error message
-#: includes/helpers.php:135
+#: includes/helpers.php:177
 #, php-format
 msgid "File does not contain valid JSON: %s"
 msgstr "Die Datei enthält kein gültiges JSON: %s"
+
+#~ msgid "Maximum size for uploaded JSON files on the Import page."
+#~ msgstr "Maximale Größe für hochgeladene JSON-Dateien auf der Import-Seite."
+
+#~ msgid ""
+#~ "Files larger than this are exported as references only. Default: 10240 "
+#~ "(10 MB)."
+#~ msgstr ""
+#~ "Dateien, die größer als dieser Wert sind, werden nur als Referenz "
+#~ "exportiert. Standard: 10240 (10 MB)."

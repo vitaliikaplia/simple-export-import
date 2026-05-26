@@ -22,11 +22,53 @@ function sei_get_default_settings() {
 		'import_title_suffix'        => ' - imported',
 		'preserve_original_author'   => false,
 		'extra_skip_meta_keys'       => '',
-		'max_file_size_mb'           => 5,
+		// Defaults derived from the actual server config — no artificial caps.
+		'max_file_size_mb'           => sei_get_php_upload_limit_mb(),
 		'pretty_json'                => true,
 		'embed_media'                => false,
 		'max_embedded_file_kb'       => 10240,
 	);
+}
+
+/**
+ * Effective PHP upload ceiling in MB.
+ * wp_max_upload_size() returns the smaller of upload_max_filesize and
+ * post_max_size in bytes; we round up to whole MB so a "64M" config
+ * reads as 64, not 63.
+ */
+function sei_get_php_upload_limit_mb() {
+	$bytes = (int) wp_max_upload_size();
+	if ( $bytes <= 0 ) {
+		return 1;
+	}
+	return max( 1, (int) ceil( $bytes / 1024 / 1024 ) );
+}
+
+/**
+ * PHP memory_limit in MB. Returns 0 if unlimited (-1) or unparseable.
+ */
+function sei_get_php_memory_limit_mb() {
+	$raw = (string) ini_get( 'memory_limit' );
+	if ( $raw === '' || $raw === '-1' ) {
+		return 0;
+	}
+	$bytes = (int) wp_convert_hr_to_bytes( $raw );
+	if ( $bytes <= 0 ) {
+		return 0;
+	}
+	return (int) round( $bytes / 1024 / 1024 );
+}
+
+/**
+ * Effective JSON-upload limit at import time = min(setting, PHP cap).
+ * The setting can only tighten the cap, never raise it past what PHP
+ * physically accepts; that way the validator's error message matches
+ * what would actually fail.
+ */
+function sei_get_effective_upload_limit_mb() {
+	$php_mb     = sei_get_php_upload_limit_mb();
+	$setting_mb = max( 1, (int) get_option( 'sei_max_file_size_mb', $php_mb ) );
+	return min( $setting_mb, $php_mb );
 }
 
 /**
@@ -108,12 +150,12 @@ function sei_validate_json_file( $file ) {
 		return $errors;
 	}
 
-	$max_mb    = max( 1, (int) get_option( 'sei_max_file_size_mb', 5 ) );
+	$max_mb    = sei_get_effective_upload_limit_mb();
 	$max_bytes = $max_mb * 1024 * 1024;
 
 	if ( $file['size'] > $max_bytes ) {
 		$errors[] = sprintf(
-			/* translators: %d: maximum file size in megabytes */
+			/* translators: %d: effective maximum file size in megabytes (min of plugin setting and PHP cap) */
 			__( 'File size exceeds %d MB limit', 'simple-export-import' ),
 			$max_mb
 		);

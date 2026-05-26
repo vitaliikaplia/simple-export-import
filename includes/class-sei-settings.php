@@ -260,9 +260,18 @@ class SEI_Settings {
 							<label for="sei_max_file_size_mb"><?php echo esc_html__( 'Max Upload Size (MB)', 'simple-export-import' ); ?></label>
 						</th>
 						<td>
+							<?php $php_upload_mb = sei_get_php_upload_limit_mb(); ?>
 							<input type="number" name="sei_max_file_size_mb" id="sei_max_file_size_mb"
-								value="<?php echo esc_attr( $max_file_size_mb ); ?>" min="1" max="100" step="1" class="small-text">
-							<p class="description"><?php echo esc_html__( 'Maximum size for uploaded JSON files on the Import page.', 'simple-export-import' ); ?></p>
+								value="<?php echo esc_attr( $max_file_size_mb ); ?>" min="1" max="<?php echo esc_attr( $php_upload_mb ); ?>" step="1" class="small-text">
+							<p class="description">
+								<?php
+								echo esc_html( sprintf(
+									/* translators: %d: server-side PHP upload ceiling in megabytes (min of upload_max_filesize and post_max_size) */
+									__( 'Maximum size for uploaded JSON files on the Import page. Server cap (PHP upload_max_filesize / post_max_size): %d MB — values above this have no effect.', 'simple-export-import' ),
+									$php_upload_mb
+								) );
+								?>
+							</p>
 						</td>
 					</tr>
 				</table>
@@ -290,7 +299,20 @@ class SEI_Settings {
 						<td>
 							<input type="number" name="sei_max_embedded_file_kb" id="sei_max_embedded_file_kb"
 								value="<?php echo esc_attr( $max_embedded_file_kb ); ?>" min="1" step="1" class="regular-text">
-							<p class="description"><?php echo esc_html__( 'Files larger than this are exported as references only. Default: 10240 (10 MB).', 'simple-export-import' ); ?></p>
+							<p class="description">
+								<?php
+								$php_memory_mb = sei_get_php_memory_limit_mb();
+								if ( $php_memory_mb > 0 ) {
+									echo esc_html( sprintf(
+										/* translators: %d: PHP memory_limit on this server in megabytes */
+										__( 'Files larger than this are exported as references only. PHP memory_limit on this server: %d MB — base64 encoding inflates files by ~33%%, so keep this well under that.', 'simple-export-import' ),
+										$php_memory_mb
+									) );
+								} else {
+									echo esc_html__( 'Files larger than this are exported as references only. PHP memory_limit on this server: unlimited.', 'simple-export-import' );
+								}
+								?>
+							</p>
 						</td>
 					</tr>
 				</table>

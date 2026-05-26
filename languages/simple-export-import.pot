@@ -3,9 +3,9 @@
 # This file is distributed under the same license as the Simple Export & Import package.
 msgid ""
 msgstr ""
-"Project-Id-Version: Simple Export & Import 1.1\n"
+"Project-Id-Version: Simple Export & Import 1.2\n"
 "Report-Msgid-Bugs-To: https://vitaliikaplia.com/\n"
-"POT-Creation-Date: 2026-05-26 19:51+0300\n"
+"POT-Creation-Date: 2026-05-26 20:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -74,16 +74,16 @@ msgstr ""
 msgid "Database insert failed: %s"
 msgstr ""
 
-#: includes/class-sei-import.php:502
+#: includes/class-sei-import.php:508
 msgid "Invalid JSON file"
 msgstr ""
 
-#: includes/class-sei-import.php:506
+#: includes/class-sei-import.php:512
 msgid "Required fields missing in JSON file"
 msgstr ""
 
 #. translators: 1: edit URL, 2: post title, 3: translations count
-#: includes/class-sei-import.php:557
+#: includes/class-sei-import.php:563
 #, php-format
 msgid ""
 "Post \"<a href=\"%1$s\">%2$s</a>\" and %3$d translation(s) were successfully "
@@ -91,7 +91,7 @@ msgid ""
 msgstr ""
 
 #. translators: 1: edit URL, 2: post title, 3: translations count
-#: includes/class-sei-import.php:566
+#: includes/class-sei-import.php:572
 #, php-format
 msgid ""
 "Post \"<a href=\"%1$s\">%2$s</a>\" and %3$d translation(s) were imported as "
@@ -100,20 +100,20 @@ msgid ""
 msgstr ""
 
 #. translators: 1: edit URL, 2: post title
-#: includes/class-sei-import.php:575
+#: includes/class-sei-import.php:581
 #, php-format
 msgid "Post \"<a href=\"%1$s\">%2$s</a>\" was successfully imported!"
 msgstr ""
 
-#: includes/class-sei-media.php:226
+#: includes/class-sei-media.php:277
 msgid "Embedded attachment is missing required fields"
 msgstr ""
 
-#: includes/class-sei-media.php:231
+#: includes/class-sei-media.php:282
 msgid "Could not decode embedded attachment"
 msgstr ""
 
-#: includes/class-sei-media.php:244
+#: includes/class-sei-media.php:295
 msgid "Failed to write embedded attachment to uploads"
 msgstr ""
 
@@ -243,23 +243,28 @@ msgstr ""
 msgid "Max Upload Size (MB)"
 msgstr ""
 
-#: includes/class-sei-settings.php:265
-msgid "Maximum size for uploaded JSON files on the Import page."
+#. translators: %d: server-side PHP upload ceiling in megabytes (min of upload_max_filesize and post_max_size)
+#: includes/class-sei-settings.php:270
+#, php-format
+msgid ""
+"Maximum size for uploaded JSON files on the Import page. Server cap (PHP "
+"upload_max_filesize / post_max_size): %d MB — values above this have no "
+"effect."
 msgstr ""
 
-#: includes/class-sei-settings.php:270
+#: includes/class-sei-settings.php:279
 msgid "Media"
 msgstr ""
 
-#: includes/class-sei-settings.php:274
+#: includes/class-sei-settings.php:283
 msgid "Embed Media Files"
 msgstr ""
 
-#: includes/class-sei-settings.php:280
+#: includes/class-sei-settings.php:289
 msgid "Embed referenced files as base64 in the JSON export"
 msgstr ""
 
-#: includes/class-sei-settings.php:282
+#: includes/class-sei-settings.php:291
 msgid ""
 "Includes featured image, attached media, images inside Gutenberg/ACF blocks, "
 "and any attachment ID referenced from post meta. On import, attachments are "
@@ -267,85 +272,94 @@ msgid ""
 "image. Disabled by default — exports stay small when off."
 msgstr ""
 
-#: includes/class-sei-settings.php:288
+#: includes/class-sei-settings.php:297
 msgid "Max Embedded File Size (KB)"
 msgstr ""
 
-#: includes/class-sei-settings.php:293
+#. translators: %d: PHP memory_limit on this server in megabytes
+#: includes/class-sei-settings.php:308
+#, php-format
 msgid ""
-"Files larger than this are exported as references only. Default: 10240 (10 "
-"MB)."
+"Files larger than this are exported as references only. PHP memory_limit on "
+"this server: %d MB — base64 encoding inflates files by ~33%%, so keep this "
+"well under that."
 msgstr ""
 
-#: includes/class-sei-settings.php:298
+#: includes/class-sei-settings.php:312
+msgid ""
+"Files larger than this are exported as references only. PHP memory_limit on "
+"this server: unlimited."
+msgstr ""
+
+#: includes/class-sei-settings.php:320
 msgid "Multilingual"
 msgstr ""
 
-#: includes/class-sei-settings.php:302
+#: includes/class-sei-settings.php:324
 msgid "Multilingual Translations"
 msgstr ""
 
-#: includes/class-sei-settings.php:311
+#: includes/class-sei-settings.php:333
 msgid "Export with translations (WPML / WP-LOC)"
 msgstr ""
 
-#: includes/class-sei-settings.php:316
+#: includes/class-sei-settings.php:338
 msgid ""
 "When enabled, exporting a post will include all of its translations in the "
 "same JSON file. Works with WPML and WP-LOC (any plugin exposing the WPML "
 "hook surface)."
 msgstr ""
 
-#: includes/class-sei-settings.php:318
+#: includes/class-sei-settings.php:340
 msgid ""
 "No multilingual plugin detected. Install and activate WPML or WP-LOC to use "
 "this feature."
 msgstr ""
 
-#: includes/helpers.php:37
+#: includes/helpers.php:79
 msgid "Read"
 msgstr ""
 
-#: includes/helpers.php:38
+#: includes/helpers.php:80
 msgid "Edit Posts"
 msgstr ""
 
-#: includes/helpers.php:39
+#: includes/helpers.php:81
 msgid "Edit Pages"
 msgstr ""
 
-#: includes/helpers.php:40
+#: includes/helpers.php:82
 msgid "Edit Published Posts"
 msgstr ""
 
-#: includes/helpers.php:41
+#: includes/helpers.php:83
 msgid "Publish Posts"
 msgstr ""
 
-#: includes/helpers.php:42
+#: includes/helpers.php:84
 msgid "Manage Options"
 msgstr ""
 
-#: includes/helpers.php:107
+#: includes/helpers.php:149
 msgid "No file uploaded"
 msgstr ""
 
-#. translators: %d: maximum file size in megabytes
-#: includes/helpers.php:117
+#. translators: %d: effective maximum file size in megabytes (min of plugin setting and PHP cap)
+#: includes/helpers.php:159
 #, php-format
 msgid "File size exceeds %d MB limit"
 msgstr ""
 
-#: includes/helpers.php:124
+#: includes/helpers.php:166
 msgid "Only JSON files are allowed"
 msgstr ""
 
-#: includes/helpers.php:129
+#: includes/helpers.php:171
 msgid "Unable to read file"
 msgstr ""
 
 #. translators: %s: JSON parser error message
-#: includes/helpers.php:135
+#: includes/helpers.php:177
 #, php-format
 msgid "File does not contain valid JSON: %s"
 msgstr ""

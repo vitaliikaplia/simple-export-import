@@ -82,11 +82,11 @@ The settings page is grouped into six sections.
 ### Export Behavior
 - **Pretty-print JSON** — toggle indentation (off = smaller files).
 - **Extra Meta Keys to Skip** — additional meta keys to exclude from export, one per line. WordPress internals (`_edit_lock`, `_wp_trash_meta_status`, etc.) are already skipped.
-- **Max Upload Size (MB)** — limit on uploaded JSON file size at import time.
+- **Max Upload Size (MB)** — limit on uploaded JSON file size at import time. Default and ceiling are derived from the server's PHP config (`min(upload_max_filesize, post_max_size)` via `wp_max_upload_size()`). The setting can only tighten the cap, never raise it past what PHP physically accepts. The current PHP cap is shown in the field's description.
 
 ### Media
 - **Embed Media Files** — when on, every attachment referenced by the post (featured image, attached media, Gutenberg/ACF blocks, post meta including nested ACF Repeater/Group/Flexible) is embedded as base64 in the JSON. On import, each is recreated on the target site and **all references are remapped** from old IDs to new IDs across post_content (via `parse_blocks`/`serialize_blocks`), block attributes, meta fields, and `wp-image-N` / `data-id` / `[gallery ids=""]` legacy markup. URLs are remapped too. Multilingual-aware: the same image referenced across translation posts is uploaded once and all language posts get the same new ID. WPML Media Translation (per-language metadata on one file) round-trips: one file is written to `uploads/`, and N sibling attachment rows share `_wp_attached_file` / `_wp_attachment_metadata` while carrying per-language title/alt/caption/description; they are connected via `wpml_set_element_language_details` with `element_type=post_attachment`.
-- **Max Embedded File Size (KB)** — files above this limit are exported as references only (no embed). Default 10240 (10 MB).
+- **Max Embedded File Size (KB)** — files above this limit are exported as references only (no embed). Default 10240 (10 MB). The current server `memory_limit` is shown in the field's description so you can pick a value that won't OOM during base64 decode (which inflates files by ~33%).
 
 ### Multilingual
 - **Multilingual Translations** — when active, exporting any post bundles all of its translations into the same JSON. On import, translations are recreated and re-connected via the multilingual plugin. Auto-disabled if no compatible plugin is detected.
@@ -253,7 +253,8 @@ Not yet — one post per JSON file. Each post can carry all its translations tho
 - **Export fidelity**: `post_date_gmt`, `comment_status`, `ping_status`, `menu_order` added so direct `$wpdb` insert can reconstruct the full row.
 - **Unique slug generator** — `wp_unique_post_slug()` replaced with a direct posts-table lookup (no hook chain).
 - **GitHub auto-update** — `SEI_GitHub_Updater` hooks WP's plugin update transient and `plugins_api`, fetches the plugin header from `raw.githubusercontent.com`, exposes the archive zip from `github.com/.../archive/refs/heads/master.zip`. 12-hour cache, force-check via `?force-check=1`. Branch overridable via `SEI_GITHUB_BRANCH` constant.
-- New translation strings: media / Yoast / `$wpdb` error messages. 75 strings translated across `uk` / `de_DE` / `ru_RU`.
+- **Server-derived size limits** — `Max Upload Size (MB)` now defaults to `wp_max_upload_size()` instead of a hardcoded `5`; the effective import cap is `min(setting, PHP upload limit)`. The Import page description and the validator's error message both show the real effective cap, so values above PHP's ceiling silently no-op instead of producing confusing "file too large" errors at the PHP level. Settings page surfaces the actual `upload_max_filesize` / `post_max_size` and `memory_limit` so admins know the ceiling without grepping `phpinfo()`.
+- New translation strings: media / Yoast / `$wpdb` error messages, server-limit descriptions. 76 strings translated across `uk` / `de_DE` / `ru_RU`.
 
 ### 1.1
 - **Critical fix**: `wp_slash()` on `post_content` / `post_excerpt` / meta values before `wp_insert_post()` and `update_post_meta()`. Gutenberg and ACF blocks no longer break on import due to WP's internal `wp_unslash()` stripping backslashes from block JSON. *(Superseded by 1.2's direct `$wpdb` path which sidesteps `wp_unslash` entirely.)*

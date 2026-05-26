@@ -35,7 +35,7 @@ class SEI_Import {
 			wp_die( esc_html__( 'You do not have permission to import posts', 'simple-export-import' ) );
 		}
 
-		$max_mb = max( 1, (int) get_option( 'sei_max_file_size_mb', 5 ) );
+		$max_mb = sei_get_effective_upload_limit_mb();
 
 		?>
 		<div class="wrap">
