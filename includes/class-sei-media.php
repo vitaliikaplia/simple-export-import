@@ -295,29 +295,41 @@ class SEI_Media {
 		$relative_path = _wp_relative_upload_path( $dest_path );
 		$guid          = trailingslashit( $upload_dir['url'] ) . $dest_name;
 
-		// Generate image sizes ONCE for the file; all language siblings reuse them.
-		$generated_metadata = null;
-		if ( strpos( $mime_type, 'image/' ) === 0 ) {
-			if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
-				require_once ABSPATH . 'wp-admin/includes/image.php';
-			}
-			$generated_metadata = wp_generate_attachment_metadata( 0, $dest_path );
-		}
-
-		// Insert main attachment row.
+		// Insert main attachment row first (no metadata yet — see below).
 		$new_main_id = self::insert_attachment_row(
 			$attachment_data,
 			$mime_type,
 			$dest_name,
 			$guid,
 			$relative_path,
-			$generated_metadata,
+			null,
 			null // no language suffix in slug
 		);
 
 		if ( is_wp_error( $new_main_id ) ) {
 			@unlink( $dest_path );
 			return $new_main_id;
+		}
+
+		// Generate image sizes ONCE — must run AFTER the attachment row
+		// exists, because wp_generate_attachment_metadata() reads the
+		// post (mime_type, file ref) by ID. With id=0 it returns only
+		// {filesize} and Gutenberg / ACF blocks can't render the image
+		// because width / height / sizes are missing.
+		$generated_metadata = null;
+		if ( strpos( $mime_type, 'image/' ) === 0 ) {
+			if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/image.php';
+			}
+			$generated_metadata = wp_generate_attachment_metadata( $new_main_id, $dest_path );
+			if ( ! empty( $generated_metadata ) ) {
+				$wpdb->insert(
+					$wpdb->postmeta,
+					array( 'post_id' => $new_main_id, 'meta_key' => '_wp_attachment_metadata', 'meta_value' => maybe_serialize( $generated_metadata ) ),
+					array( '%d', '%s', '%s' )
+				);
+				clean_post_cache( $new_main_id );
+			}
 		}
 
 		$id_map = array();
@@ -327,6 +339,7 @@ class SEI_Media {
 		}
 
 		// Sibling rows for each translation — same file, translated metadata.
+		// They reuse $generated_metadata so we don't re-resize the image N times.
 		$new_translation_ids = array(); // [lang_code => new_id]
 		if ( ! empty( $attachment_data['translations'] ) && is_array( $attachment_data['translations'] ) ) {
 			foreach ( $attachment_data['translations'] as $trans ) {

@@ -245,6 +245,9 @@ Not yet — one post per JSON file. Each post can carry all its translations tho
 
 ## Changelog
 
+### 1.3.1
+- **Fix: imported images now render in Gutenberg / ACF blocks.** v1.3 wrote `_wp_attachment_metadata` for embedded attachments as `{filesize: …}` only — missing `width`, `height` and `sizes`. Cause: `wp_generate_attachment_metadata()` was called with `attachment_id = 0` before the attachment row existed, so WP couldn't read its mime_type and bailed out early. Fixed by inserting the attachment row first, then generating metadata against the real ID, then saving it. Per-language siblings still reuse one metadata payload (no double resize). Re-import any attachments uploaded under v1.3 to regenerate their metadata.
+
 ### 1.3
 - **Fix: block-attribute encoding no longer mangled on import.** The previous version round-tripped post_content through `parse_blocks()` + `serialize_blocks()` to remap attachment IDs. WP core's `serialize_block_attributes()` re-encodes via `wp_json_encode` with `JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_HEX_AMP`, turning every `<` into `<`, every `"` into `"`, etc. Themes / ACF preview / front-end JS parsers relying on raw markup silently broke. v1.3 swaps the round-trip for targeted regex substitutions on whitelisted JSON keys inside block comments — encoding, whitespace, comments, and untouched IDs are preserved byte-for-byte. Two new filters expose the whitelist: `sei_media_scalar_id_keys` and `sei_media_array_id_keys`.
 - **`post_modified` / `post_modified_gmt` preserved 1-to-1.** Export already carried `post_date` / `post_date_gmt`; now the modification timestamps round-trip too, so sitemaps / audit logs / Modified columns line up with the source.
