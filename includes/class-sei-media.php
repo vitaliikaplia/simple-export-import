@@ -11,13 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class SEI_Media {
 
-	/**
-	 * Block attribute names that conventionally hold attachment IDs.
-	 * Walker still remaps any integer matching the id_map even outside this
-	 * list — this is just used for defensive sanity, not the source of truth.
-	 */
-	private const KNOWN_ID_ATTRS = array( 'id', 'mediaId', 'imageId', 'videoId', 'audioId', 'fileId', 'ids', 'mediaIds' );
-
 	/* ----------------------------------------------------------------------
 	 * Settings accessors
 	 * -------------------------------------------------------------------- */
@@ -526,24 +519,73 @@ class SEI_Media {
 	}
 
 	/**
-	 * Remap IDs and URLs in post_content. Block content goes through
-	 * parse_blocks/serialize_blocks (so ACF block JSON inside the comment
-	 * is re-encoded properly with escapes); legacy markup is patched via
-	 * regex. URL replacement is applied last.
+	 * Remap IDs and URLs in post_content via targeted regex replacements.
+	 *
+	 * Earlier versions ran parse_blocks() → walk attrs → serialize_blocks().
+	 * That worked structurally but it round-trips block attributes through
+	 * WP core's serialize_block_attributes(), which uses wp_json_encode()
+	 * with JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_HEX_AMP.
+	 * Result: every `<` became `<`, every `"` became `"`, etc.
+	 * Themes/preview renderers that match the original raw markup (regex,
+	 * front-end JS parsers, custom render templates) broke.
+	 *
+	 * Regex stays surgical: we only touch numeric values under whitelisted
+	 * JSON keys inside block-comment attrs, plus the legacy markup outside
+	 * blocks. Encoding, whitespace, comments and untouched IDs are
+	 * preserved byte-for-byte.
+	 *
+	 * @param string                    $content
+	 * @param array<int,int>            $id_map
+	 * @param array<string,string>      $url_map
 	 */
 	public static function remap_content( $content, array $id_map, array $url_map ) {
 		if ( $content === '' ) {
 			return $content;
 		}
 
-		if ( function_exists( 'parse_blocks' ) && function_exists( 'serialize_blocks' ) && has_blocks( $content ) ) {
-			$blocks  = parse_blocks( $content );
-			$blocks  = self::walk_blocks_remap( $blocks, $id_map );
-			$content = serialize_blocks( $blocks );
-		}
-
-		// Legacy wp-image-N classes.
 		if ( $id_map ) {
+			$scalar_keys = (array) apply_filters(
+				'sei_media_scalar_id_keys',
+				array( 'id', 'mediaId', 'imageId', 'videoId', 'audioId', 'fileId', 'image', 'file', 'thumbnail', 'thumbnail_id', 'attachment_id', 'background', 'illustration' )
+			);
+			$array_keys = (array) apply_filters(
+				'sei_media_array_id_keys',
+				array( 'ids', 'mediaIds', 'gallery', 'images' )
+			);
+
+			$scalar_alt = implode( '|', array_map( 'preg_quote', array_unique( array_filter( $scalar_keys ) ) ) );
+			$array_alt  = implode( '|', array_map( 'preg_quote', array_unique( array_filter( $array_keys ) ) ) );
+
+			// Single-ID block attr: "image":5187 → "image":5345.
+			// Lookahead asserts the value ends (comma / closing brace / ws)
+			// so 5187 won't partial-match inside 51870 or 15187.
+			if ( $scalar_alt !== '' ) {
+				$content = preg_replace_callback(
+					'/("(?:' . $scalar_alt . ')"\s*:\s*)(\d+)(?=\s*[,}\]])/',
+					function ( $m ) use ( $id_map ) {
+						$old = (int) $m[2];
+						return isset( $id_map[ $old ] ) ? $m[1] . $id_map[ $old ] : $m[0];
+					},
+					$content
+				);
+			}
+
+			// Array of IDs: "ids":[1,2,5187,3] → "ids":[1,2,5345,3].
+			if ( $array_alt !== '' ) {
+				$content = preg_replace_callback(
+					'/("(?:' . $array_alt . ')"\s*:\s*\[)([^\]]*)(\])/',
+					function ( $m ) use ( $id_map ) {
+						$body = preg_replace_callback( '/\b(\d+)\b/', function ( $mm ) use ( $id_map ) {
+							$old = (int) $mm[1];
+							return isset( $id_map[ $old ] ) ? (string) $id_map[ $old ] : $mm[1];
+						}, $m[2] );
+						return $m[1] . $body . $m[3];
+					},
+					$content
+				);
+			}
+
+			// Legacy markup outside block JSON.
 			$content = preg_replace_callback( '/wp-image-(\d+)/', function ( $m ) use ( $id_map ) {
 				$old = (int) $m[1];
 				return isset( $id_map[ $old ] ) ? 'wp-image-' . $id_map[ $old ] : $m[0];
@@ -554,7 +596,6 @@ class SEI_Media {
 				return isset( $id_map[ $old ] ) ? $m[1] . $id_map[ $old ] . $m[3] : $m[0];
 			}, $content );
 
-			// [gallery ids="1,2,3"] — remap each ID in the CSV.
 			$content = preg_replace_callback( '/(\[gallery[^\]]*\bids=["\'])([\d,\s]+)(["\'])/i', function ( $m ) use ( $id_map ) {
 				$parts = array_map( function ( $id ) use ( $id_map ) {
 					$id = (int) trim( $id );
@@ -564,8 +605,7 @@ class SEI_Media {
 			}, $content );
 		}
 
-		// URL replacement (do this AFTER block reserialization so escapes
-		// stay correct). Longest URLs first so /foo/bar.jpg-150x150 isn't
+		// URL replacement. Longest first so /foo/bar.jpg-150x150 isn't
 		// partly matched by /foo/bar.jpg.
 		if ( $url_map ) {
 			uksort( $url_map, function ( $a, $b ) {
@@ -575,25 +615,6 @@ class SEI_Media {
 		}
 
 		return $content;
-	}
-
-	/**
-	 * Walk parsed blocks, remap attrs (recursively for ACF block data),
-	 * and recurse into innerBlocks. attrs walker treats any int or
-	 * numeric-string matching id_map as remappable, mirroring the
-	 * collector's heuristic.
-	 */
-	private static function walk_blocks_remap( $blocks, array $id_map ) {
-		foreach ( $blocks as &$block ) {
-			if ( ! empty( $block['attrs'] ) && is_array( $block['attrs'] ) ) {
-				$block['attrs'] = self::remap_value( $block['attrs'], $id_map, array() );
-			}
-			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
-				$block['innerBlocks'] = self::walk_blocks_remap( $block['innerBlocks'], $id_map );
-			}
-		}
-		unset( $block );
-		return $blocks;
 	}
 
 	/**
