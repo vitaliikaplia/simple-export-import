@@ -150,10 +150,22 @@ class SEI_Import {
 			? $post_data['post_modified_gmt']
 			: get_gmt_from_date( $post_modified );
 
+		// Target language for this row: translations carry their own
+		// language_code; the main post inherits from original_language when
+		// the export was multilingual. Used for slug-uniqueness scoping —
+		// WPML and WP-LOC route via /<lang>/<slug>, so the same slug in two
+		// different languages is allowed.
+		$language_code = '';
+		if ( ! empty( $post_data['language_code'] ) ) {
+			$language_code = (string) $post_data['language_code'];
+		} elseif ( ! empty( $post_data['wpml_enabled'] ) && ! empty( $post_data['original_language'] ) ) {
+			$language_code = (string) $post_data['original_language'];
+		}
+
 		$base_slug = ! empty( $post_data['post_name'] )
 			? sanitize_title( $post_data['post_name'] )
 			: sanitize_title( $post_title );
-		$post_name = self::generate_unique_slug( $base_slug );
+		$post_name = self::generate_unique_slug( $base_slug, $language_code );
 
 		$row = array(
 			'post_author'           => $author_id,
@@ -317,25 +329,56 @@ class SEI_Import {
 
 	/**
 	 * Generate a unique post_name (slug). Replicates wp_unique_post_slug
-	 * without firing its hooks — just a direct lookup against the posts table.
+	 * without firing its hooks — direct lookup against the posts table.
+	 *
+	 * When $language_code is supplied AND a multilingual backend is active,
+	 * uniqueness is scoped per-language. WPML and WP-LOC both route via
+	 * /<lang>/<slug>, so /uk/post-1 and /en/post-1 are valid distinct URLs.
+	 * An existing post with the same slug in a DIFFERENT language is not
+	 * a collision and we can reuse the slug verbatim — exactly how WPML's
+	 * own duplicate-as-translation feature behaves.
+	 *
+	 * @param string $base_slug
+	 * @param string $language_code  Target language; empty = global uniqueness (legacy behavior).
 	 */
-	private static function generate_unique_slug( $base_slug ) {
+	private static function generate_unique_slug( $base_slug, $language_code = '' ) {
 		global $wpdb;
 
 		if ( $base_slug === '' ) {
 			$base_slug = 'imported-' . wp_generate_password( 6, false, false );
 		}
 
+		$scoped = $language_code !== '' && sei_is_multilingual_active();
+
 		$slug  = $base_slug;
 		$tries = 0;
 		while ( $tries < 100 ) {
-			$exists = $wpdb->get_var( $wpdb->prepare(
-				"SELECT ID FROM {$wpdb->posts} WHERE post_name = %s LIMIT 1",
+			$existing_ids = $wpdb->get_col( $wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_name = %s",
 				$slug
 			) );
-			if ( ! $exists ) {
+
+			if ( empty( $existing_ids ) ) {
 				return $slug;
 			}
+
+			if ( $scoped ) {
+				$collision = false;
+				foreach ( $existing_ids as $existing_id ) {
+					$other_lang = apply_filters( 'wpml_element_language_code', null, array(
+						'element_id'   => (int) $existing_id,
+						'element_type' => 'post_' . get_post_type( $existing_id ),
+					) );
+					if ( $other_lang === $language_code ) {
+						$collision = true;
+						break;
+					}
+				}
+				if ( ! $collision ) {
+					return $slug;
+				}
+			}
+
 			$tries++;
 			$slug = $base_slug . '-' . $tries;
 		}

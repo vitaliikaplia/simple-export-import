@@ -245,6 +245,9 @@ Not yet — one post per JSON file. Each post can carry all its translations tho
 
 ## Changelog
 
+### 1.3.2
+- **Fix: slug uniqueness is now per-language for multilingual imports.** Previous behavior generated `slug-1`, `slug-2`, … for translations because the check scanned `wp_posts` globally. But WPML and WP-LOC both route via `/<lang>/<slug>`, so `/uk/post-1` and `/en/post-1` are distinct URLs and the same slug is allowed across languages. The generator now scopes uniqueness to the target language (via `apply_filters( 'wpml_element_language_code', … )`) and only increments the slug when an existing post in the SAME language already uses it. Falls back to global uniqueness when no language is known (legacy / non-multilingual imports).
+
 ### 1.3.1
 - **Fix: imported images now render in Gutenberg / ACF blocks.** v1.3 wrote `_wp_attachment_metadata` for embedded attachments as `{filesize: …}` only — missing `width`, `height` and `sizes`. Cause: `wp_generate_attachment_metadata()` was called with `attachment_id = 0` before the attachment row existed, so WP couldn't read its mime_type and bailed out early. Fixed by inserting the attachment row first, then generating metadata against the real ID, then saving it. Per-language siblings still reuse one metadata payload (no double resize). Re-import any attachments uploaded under v1.3 to regenerate their metadata.
 
