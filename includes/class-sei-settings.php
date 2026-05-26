@@ -48,7 +48,10 @@ class SEI_Settings {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
-		return array_values( array_filter( array_map( 'sanitize_key', $value ) ) );
+		$sanitized = array_values( array_filter( array_map( 'sanitize_key', $value ) ) );
+		// Attachments are child content, not standalone posts — keep them
+		// out even if a user manually pokes the option.
+		return array_values( array_diff( $sanitized, array( 'attachment' ) ) );
 	}
 
 	public static function sanitize_bool( $value ) {
@@ -111,6 +114,10 @@ class SEI_Settings {
 
 		$multilingual_active = sei_is_multilingual_active();
 		$post_types          = get_post_types( array( 'public' => true ), 'objects' );
+		// Attachments are file uploads, not standalone content — they ride
+		// along inside posts via featured_image / attachments / embedded
+		// media, not as their own export entries.
+		unset( $post_types['attachment'] );
 		$capabilities        = sei_get_capabilities_list();
 		$post_statuses       = array(
 			'draft'   => __( 'Draft', 'simple-export-import' ),

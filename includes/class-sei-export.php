@@ -197,6 +197,13 @@ class SEI_Export {
 	 * Inject the Export row action on supported post types.
 	 */
 	public static function add_export_link( $actions, $post ) {
+		// Attachments ride along inside posts (featured_image / embedded
+		// media); never expose Export on the Media library row even if
+		// the option still contains 'attachment' from an older save.
+		if ( get_post_type( $post ) === 'attachment' ) {
+			return $actions;
+		}
+
 		$defaults          = sei_get_default_settings();
 		$allowed_types     = get_option( 'sei_post_types', $defaults['post_types'] );
 		$export_capability = get_option( 'sei_export_capability', $defaults['export_capability'] );
@@ -223,7 +230,7 @@ class SEI_Export {
 		$allowed_types = get_option( 'sei_post_types', $defaults['post_types'] );
 
 		foreach ( (array) $allowed_types as $post_type ) {
-			if ( in_array( $post_type, array( 'post', 'page' ), true ) ) {
+			if ( in_array( $post_type, array( 'post', 'page', 'attachment' ), true ) ) {
 				continue;
 			}
 			add_filter( $post_type . '_row_actions', array( __CLASS__, 'add_export_link' ), 10, 2 );
