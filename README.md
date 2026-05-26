@@ -245,6 +245,15 @@ Not yet — one post per JSON file. Each post can carry all its translations tho
 
 ## Changelog
 
+### 1.4
+- **Cross-post ID references survive a migration.** ACF PostObject / Relationship fields and Gutenberg block attrs that point at *other* posts by ID (e.g. `acf/main-services-grid` → `manual_services: ["960","957",…]`) used to break on import because the target site has different auto-increment IDs. v1.4 captures the referenced posts' `post_type / post_title / post_name / language_code` alongside the ID in a new `referenced_posts` JSON section, and the importer resolves them on the target by trying:
+  1. Direct ID match — but only when the post at that ID has the same `post_title` (so we don't mistake an unrelated post that happens to share the auto-increment number).
+  2. Lookup by `post_name + post_type + language`.
+  3. Lookup by `post_title + post_type + language`.
+  Whichever hits first becomes the new ID. The resolved map is merged with the attachment ID map and applied through the same regex remap pass, so block attrs, ACF arrays of IDs, and legacy markup all update together.
+- New file: `includes/class-sei-references.php` with `SEI_References::collect()` and `::resolve()`.
+- `remap_content()` whitelist expanded: scalar keys now include `post`, `post_id`, `page`, `related_post`; array keys now include `manual_services`, `related_posts`, `posts`, `pages`, `items`. Scalar regex now matches both raw int and quoted string-int (PostObject stores either depending on field config). Two new filters: `sei_remap_scalar_id_keys` and `sei_remap_array_id_keys` (the old `sei_media_*` filter names still apply on top, for back-compat).
+
 ### 1.3.2
 - **Fix: slug uniqueness is now per-language for multilingual imports.** Previous behavior generated `slug-1`, `slug-2`, … for translations because the check scanned `wp_posts` globally. But WPML and WP-LOC both route via `/<lang>/<slug>`, so `/uk/post-1` and `/en/post-1` are distinct URLs and the same slug is allowed across languages. The generator now scopes uniqueness to the target language (via `apply_filters( 'wpml_element_language_code', … )`) and only increments the slug when an existing post in the SAME language already uses it. Falls back to global uniqueness when no language is known (legacy / non-multilingual imports).
 

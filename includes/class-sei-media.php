@@ -557,33 +557,52 @@ class SEI_Media {
 		}
 
 		if ( $id_map ) {
+			// Whitelist of block-attr key names whose value is a single
+			// attachment / post ID. Covers core blocks, common ACF Image /
+			// File / Post Object naming. Filter for theme-specific keys.
 			$scalar_keys = (array) apply_filters(
-				'sei_media_scalar_id_keys',
-				array( 'id', 'mediaId', 'imageId', 'videoId', 'audioId', 'fileId', 'image', 'file', 'thumbnail', 'thumbnail_id', 'attachment_id', 'background', 'illustration' )
+				'sei_remap_scalar_id_keys',
+				array( 'id', 'mediaId', 'imageId', 'videoId', 'audioId', 'fileId', 'image', 'file', 'thumbnail', 'thumbnail_id', 'attachment_id', 'background', 'illustration', 'post', 'post_id', 'page', 'related_post' )
 			);
+			// Whitelist for keys whose value is an array of IDs. Covers
+			// core gallery + common ACF Relationship / multi-PostObject /
+			// Gallery naming. Filter for theme-specific keys.
 			$array_keys = (array) apply_filters(
-				'sei_media_array_id_keys',
-				array( 'ids', 'mediaIds', 'gallery', 'images' )
+				'sei_remap_array_id_keys',
+				array( 'ids', 'mediaIds', 'gallery', 'images', 'manual_services', 'related_posts', 'posts', 'pages', 'items' )
 			);
+
+			// Legacy filter names — kept for back-compat with anyone who
+			// already extended the lists via the 1.3 names.
+			$scalar_keys = (array) apply_filters( 'sei_media_scalar_id_keys', $scalar_keys );
+			$array_keys  = (array) apply_filters( 'sei_media_array_id_keys', $array_keys );
 
 			$scalar_alt = implode( '|', array_map( 'preg_quote', array_unique( array_filter( $scalar_keys ) ) ) );
 			$array_alt  = implode( '|', array_map( 'preg_quote', array_unique( array_filter( $array_keys ) ) ) );
 
-			// Single-ID block attr: "image":5187 → "image":5345.
-			// Lookahead asserts the value ends (comma / closing brace / ws)
-			// so 5187 won't partial-match inside 51870 or 15187.
+			// Single-ID block attr — handles both raw int and string-int
+			// (ACF PostObject can store either depending on field config):
+			//   "image":5187 → "image":5345
+			//   "post_id":"5187" → "post_id":"5345"
+			// Lookahead asserts the value ends cleanly so 5187 won't
+			// partial-match inside 51870 or 15187.
 			if ( $scalar_alt !== '' ) {
 				$content = preg_replace_callback(
-					'/("(?:' . $scalar_alt . ')"\s*:\s*)(\d+)(?=\s*[,}\]])/',
+					'/("(?:' . $scalar_alt . ')"\s*:\s*)("?)(\d+)("?)(?=\s*[,}\]])/',
 					function ( $m ) use ( $id_map ) {
-						$old = (int) $m[2];
-						return isset( $id_map[ $old ] ) ? $m[1] . $id_map[ $old ] : $m[0];
+						$old = (int) $m[3];
+						if ( ! isset( $id_map[ $old ] ) ) {
+							return $m[0];
+						}
+						return $m[1] . $m[2] . $id_map[ $old ] . $m[4];
 					},
 					$content
 				);
 			}
 
 			// Array of IDs: "ids":[1,2,5187,3] → "ids":[1,2,5345,3].
+			// The body regex \b(\d+)\b matches digits both as raw ints
+			// and inside "quoted" string-ints (e.g. ["960","957"]).
 			if ( $array_alt !== '' ) {
 				$content = preg_replace_callback(
 					'/("(?:' . $array_alt . ')"\s*:\s*\[)([^\]]*)(\])/',

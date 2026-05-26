@@ -295,6 +295,48 @@ class SEI_Import {
 	}
 
 	/**
+	 * Walk referenced_posts across the main post and every translation,
+	 * deduplicate by source ID, and ask SEI_References to look each one up
+	 * on the target. The returned map contains only entries where the
+	 * source ID does not point at the right post on the target — entries
+	 * that already line up are left out (no needless remap).
+	 *
+	 * @return array<int,int>
+	 */
+	private static function resolve_referenced_posts( array $post_data ) {
+		$by_id = array();
+
+		if ( ! empty( $post_data['referenced_posts'] ) && is_array( $post_data['referenced_posts'] ) ) {
+			foreach ( $post_data['referenced_posts'] as $ref ) {
+				$id = (int) ( $ref['id'] ?? 0 );
+				if ( $id > 0 ) {
+					$by_id[ $id ] = $ref;
+				}
+			}
+		}
+
+		if ( ! empty( $post_data['translations'] ) && is_array( $post_data['translations'] ) ) {
+			foreach ( $post_data['translations'] as $translation ) {
+				if ( empty( $translation['referenced_posts'] ) || ! is_array( $translation['referenced_posts'] ) ) {
+					continue;
+				}
+				foreach ( $translation['referenced_posts'] as $ref ) {
+					$id = (int) ( $ref['id'] ?? 0 );
+					if ( $id > 0 && ! isset( $by_id[ $id ] ) ) {
+						$by_id[ $id ] = $ref;
+					}
+				}
+			}
+		}
+
+		if ( empty( $by_id ) ) {
+			return array();
+		}
+
+		return SEI_References::resolve( array_values( $by_id ) );
+	}
+
+	/**
 	 * Ask known SEO plugins to rebuild any cached representation of the post.
 	 * Each block is fully isolated in try/catch — if a third-party container
 	 * throws, the import has already succeeded; we don't want to lose it.
@@ -572,6 +614,17 @@ class SEI_Import {
 		// reference the same images across language posts; we want to upload
 		// each file exactly once.
 		list( $id_map, $url_map ) = self::import_embedded_attachments( $post_data );
+
+		// Cross-post references (ACF PostObject/Relationship, post-IDs inside
+		// Gutenberg block attrs). Resolve to target IDs by post_name / title
+		// in the right language; merge into the same id_map so the remap
+		// pass rewrites everything in one go.
+		$reference_id_map = self::resolve_referenced_posts( $post_data );
+		foreach ( $reference_id_map as $old => $new ) {
+			if ( ! isset( $id_map[ $old ] ) ) {
+				$id_map[ $old ] = $new;
+			}
+		}
 
 		$new_post_id = self::import_single_post( $post_data, $import_status, $id_map, $url_map );
 

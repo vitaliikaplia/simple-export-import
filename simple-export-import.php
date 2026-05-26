@@ -3,7 +3,7 @@
  * Plugin Name: Simple Export & Import
  * Plugin URI: https://vitaliikaplia.com/
  * Description: Export & import WordPress posts as JSON with full Gutenberg / ACF / WPML / WP-LOC support.
- * Version: 1.3.2
+ * Version: 1.4
  * Author: Vitalii Kaplia
  * Author URI: https://vitaliikaplia.com/
  * License: GPLv2 or later
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SEI_VERSION', '1.3.2' );
+define( 'SEI_VERSION', '1.4' );
 define( 'SEI_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SEI_URL', plugin_dir_url( __FILE__ ) );
 define( 'SEI_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -26,6 +26,7 @@ define( 'SEI_GITHUB_BRANCH', 'master' );
 require_once SEI_PATH . 'includes/helpers.php';
 require_once SEI_PATH . 'includes/class-sei-multilingual.php';
 require_once SEI_PATH . 'includes/class-sei-media.php';
+require_once SEI_PATH . 'includes/class-sei-references.php';
 require_once SEI_PATH . 'includes/class-sei-settings.php';
 require_once SEI_PATH . 'includes/class-sei-export.php';
 require_once SEI_PATH . 'includes/class-sei-import.php';

@@ -109,6 +109,12 @@ class SEI_Export {
 			}
 		}
 
+		// Cross-post ID references (ACF PostObject/Relationship, Gutenberg
+		// blocks pointing at other posts). Capture title + slug + language
+		// so the importer can resolve them on the target even when the
+		// post-ID auto-increment has diverged.
+		$post_data['referenced_posts'] = SEI_References::collect( $post_data );
+
 		return $post_data;
 	}
 
